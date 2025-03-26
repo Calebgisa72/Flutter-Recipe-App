@@ -11,7 +11,7 @@ class MyIconButton extends StatelessWidget {
       style: IconButton.styleFrom(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         backgroundColor: Colors.white,
-        fixedSize: Size(50, 50),
+        fixedSize: Size(45, 45),
       ),
       onPressed: pressed,
       icon: Icon(icon),

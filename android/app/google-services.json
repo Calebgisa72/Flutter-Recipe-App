@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "715349318663",
+    "project_id": "flutter-recipe-app-6b63e",
+    "storage_bucket": "flutter-recipe-app-6b63e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:715349318663:android:25913169032d6b7c059ea2",
+        "android_client_info": {
+          "package_name": "com.calebMobile.flutter_recipe_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8zR0MamID3EVrg38p5zImTFM8FAl9ShA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

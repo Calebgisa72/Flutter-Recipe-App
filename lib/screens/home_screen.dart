@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/banner.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
+import 'package:flutter_recipe_app/screens/view_all_recipes.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -68,7 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ViewAllRecipes(),
+                              ),
+                            );
+                          },
                           child: Text(
                             "View all",
                             style: TextStyle(

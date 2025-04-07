@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/screens/favorite_screen.dart';
 import 'package:flutter_recipe_app/screens/home_screen.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
@@ -17,7 +18,7 @@ class _AppMainScreenState extends State<AppMainScreen> {
   void initState() {
     pages = [
       HomeScreen(),
-      navBarPage(Iconsax.heart5),
+      FavoriteScreen(),
       navBarPage(Iconsax.calendar5),
       navBarPage(Iconsax.setting_21),
     ];

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'Receiptdetails.dart';
-
 class Profile extends StatefulWidget {
   const Profile({super.key});
 
@@ -96,10 +94,6 @@ class _ProfileState extends State<Profile> {
                         selectedVar =
                             (selectedVar == 'follow') ? 'Unfollow' : 'follow';
                       });
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => Details()),
-                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:

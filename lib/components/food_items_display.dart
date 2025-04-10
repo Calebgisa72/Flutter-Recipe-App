@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
+import 'package:flutter_recipe_app/screens/Receiptdetails.dart';
 import 'package:iconsax/iconsax.dart';
 
 class FoodItemsDisplay extends StatelessWidget {
@@ -15,7 +16,14 @@ class FoodItemsDisplay extends StatelessWidget {
     return SizedBox(
       width: 200,
       child: GestureDetector(
-        onTap: () {},
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Details(documentSnapshot: documentSnapshot),
+            ),
+          );
+        },
         child: Stack(
           children: [
             Column(

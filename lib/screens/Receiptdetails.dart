@@ -25,7 +25,7 @@ class _DetailState extends State<Details> {
           DraggableScrollableSheet(
             initialChildSize: 0.65,
             minChildSize: 0.65,
-            maxChildSize: 1,
+            maxChildSize: 0.95,
             builder: (context, scrollController) {
               return Container(
                 decoration: BoxDecoration(
@@ -33,7 +33,7 @@ class _DetailState extends State<Details> {
                     topLeft: Radius.circular(25),
                     topRight: Radius.circular(25),
                   ),
-                  color: Colors.white,
+                  color: bgColor,
                   border: Border.all(
                     width: 1,
                     color: const Color.fromARGB(255, 194, 191, 191),
@@ -230,7 +230,7 @@ class _DetailState extends State<Details> {
                       Text(
                         'Your recipe has been uploaded, you can see it on your profile. Your recipe has been uploaded, you can see it on your profile.',
                         style: TextStyle(
-                          color: const Color.fromARGB(255, 138, 137, 137),
+                          color: Colors.grey.shade600,
                           fontSize: 17,
                         ),
                       ),
@@ -241,7 +241,6 @@ class _DetailState extends State<Details> {
                         height: 20,
                       ),
 
-                      // Ingredients section
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -252,48 +251,19 @@ class _DetailState extends State<Details> {
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 10),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildIngredientItem('4 Eggs'),
-                          _buildIngredientItem('1/2 Butter'),
-                          _buildIngredientItem('1/2 Butter'),
-                        ],
-                      ),
-
-                      const Divider(
-                        color: Colors.grey,
-                        thickness: 0.5,
-                        height: 20,
-                      ),
-
-                      // Steps section
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Steps',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        spacing: 20,
+                        children: List.generate(
+                          widget.documentSnapshot['ingredients'].length,
+                          (index) => _buildIngredientItem(
+                            widget.documentSnapshot['ingredients'][index]
+                                as Map<String, dynamic>,
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 10),
-                      _buildStepItem(
-                        stepNumber: 1,
-                        description:
-                            'Your recipe has been uploaded successfully, Your recipe has been uploaded successfully',
-                        imagePath: 'assets/images/ingredients.png',
-                      ),
-                      _buildStepItem(
-                        stepNumber: 2,
-                        description:
-                            'Your recipe has been uploaded successfully, Your recipe has been uploaded successfully',
-                        imagePath: 'assets/images/ingredients.png',
-                      ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -305,67 +275,53 @@ class _DetailState extends State<Details> {
     );
   }
 
-  Widget _buildIngredientItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          const Icon(Icons.check, color: Colors.green, size: 20),
-          const SizedBox(width: 8),
-          Text(text, style: const TextStyle(fontSize: 16)),
+  Widget _buildIngredientItem(Map<String, dynamic> ingredient) {
+    return Container(
+      decoration: BoxDecoration(
+        color: secondary,
+        borderRadius: BorderRadius.circular(bRadius),
+        boxShadow: [
+          BoxShadow(
+            color: foreGround.withOpacity(0.2),
+            offset: const Offset(0, 4),
+            blurRadius: 6,
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStepItem({
-    required int stepNumber,
-    required String description,
-    required String imagePath,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          margin: const EdgeInsets.only(top: 4),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 92, 101, 121),
-            borderRadius: BorderRadius.circular(bRadius),
-          ),
-          child: Center(
-            child: Text(
-              '$stepNumber',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(description, style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 10),
-              Container(
-                height: 180,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: AssetImage(imagePath),
-                    fit: BoxFit.cover,
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 90,
+              height: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(bRadius),
+                image: DecorationImage(
+                  fit: BoxFit.cover,
+                  image: NetworkImage(ingredient['image']),
                 ),
               ),
-            ],
-          ),
+            ),
+            SizedBox(width: 15),
+            Expanded(
+              child: Text(
+                ingredient['name'],
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+            ),
+            SizedBox(width: 10),
+            Text(
+              ingredient['amount'],
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

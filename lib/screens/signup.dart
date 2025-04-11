@@ -1,15 +1,84 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_recipe_app/screens/profile.dart';
-import 'package:flutter_recipe_app/utils/constants.dart';
 import '../screens/login.dart';
+import 'myprofile.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class Signup extends StatelessWidget {
+class Signup extends StatefulWidget {
   const Signup({super.key});
+
+  @override
+  State<Signup> createState() => _SignupState();
+}
+
+class _SignupState extends State<Signup> {
+  final _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool isPasswordLong = false;
+  bool hasPasswordNumber = false;
+  bool isPasswordVisible = false;
+  bool isLoading = false;
+  bool emailerror = false;
+  bool isEmailEmpty = false;
+  bool isPasswordEmpty = false;
+  String emptyMessage = '';
+  String responseMessage = '';
+
+  Future<void> signUp(String email, String password) async {
+    setState(() => isLoading = true);
+
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Login()),
+      );
+      setState(() => isLoading = false);
+    } catch (e) {
+      if (e is FirebaseAuthException && e.code == 'email-already-in-use') {
+        
+        setState(() => responseMessage = "email already in  use");
+        setState(() => isLoading = false);
+      } else {
+        
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  void onPasswordChanged(String password) {
+    setState(() {
+      isPasswordLong = password.length > 6;
+      hasPasswordNumber = password.contains(RegExp(r'[0-9]'));
+      emptyMessage = '';
+      isPasswordEmpty = false;
+      responseMessage = '';
+    });
+  }
+
+  bool _validateEmail(String email) {
+    final isValid = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    final isGmail = email.toLowerCase().contains("@gmail.com");
+
+    return isValid && (!isGmail || !email.contains(RegExp(r'[A-Z]')));
+  }
+
+  bool get isButtonEnabled {
+    final bothEmpty =
+        _emailController.text.isEmpty && _passwordController.text.isEmpty;
+    return bothEmpty || (!emailerror && isPasswordLong && hasPasswordNumber);
+  }
+  // bool isButtonEnabled = false;
+
+  bool isdataVerified = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         child: Container(
@@ -48,13 +117,16 @@ class Signup extends StatelessWidget {
               Container(
                 margin: EdgeInsets.only(top: 20),
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.07,
+                height: MediaQuery.of(context).size.height * 0.08,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: const Color.fromARGB(255, 78, 76, 76),
+                    color:
+                        isEmailEmpty
+                            ? Colors.red
+                            : const Color.fromARGB(255, 205, 201, 201),
                     width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(bRadius),
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -63,39 +135,63 @@ class Signup extends StatelessWidget {
                       margin: EdgeInsets.only(left: 20),
                       child: Image.asset(
                         'assets/icons/email.png',
-                        height: 20,
-                        width: 20,
-                        color: Colors.grey,
+                        height: 27,
+                        width: 27,
                       ),
                     ),
-                    SizedBox(width: 12),
+                    SizedBox(width: 7),
                     Expanded(
                       child: Container(
-                        child: TextField(
+                        child: TextFormField(
+                          controller: _emailController,
                           decoration: InputDecoration(
-                            hintText: "Email or Phone number",
+                            hintText: 'Enter email',
                             border: InputBorder.none,
                             hintStyle: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
+                              fontSize: 21,
+                              color: Color.fromARGB(255, 19, 19, 19),
                             ),
                           ),
-                        ),
+                          onChanged: (value) {
+                            setState(() {
+                              emailerror = !_validateEmail(value);
+                              emptyMessage = '';
+                              isEmailEmpty = false;
+                              responseMessage = '';
+                            });
+                          },
+                        ), //
                       ),
                     ),
                   ],
                 ),
               ),
+
+              if (emailerror != false)
+                Container(
+                  margin: EdgeInsets.only(top: 4),
+                  width: MediaQuery.of(context).size.width * 0.80,
+                  alignment: Alignment.centerLeft,
+
+                  child: Text(
+                    'invalid email',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+
               Container(
                 margin: EdgeInsets.only(top: 20),
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.07,
+                height: MediaQuery.of(context).size.height * 0.08,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: const Color.fromARGB(255, 78, 76, 76),
+                    color:
+                        isPasswordEmpty
+                            ? Colors.red
+                            : const Color.fromARGB(255, 205, 201, 201),
                     width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(bRadius),
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -104,36 +200,48 @@ class Signup extends StatelessWidget {
                       margin: EdgeInsets.only(left: 20),
                       child: Image.asset(
                         'assets/icons/lock.png',
-                        height: 20,
-                        width: 20,
-                        color: Colors.grey,
+                        height: 27,
+                        width: 27,
                       ),
                     ),
-                    SizedBox(width: 12),
+                    SizedBox(width: 4),
                     Expanded(
-                      child: Container(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: "Password",
-                            border: InputBorder.none,
-                            hintStyle: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
+                      child: TextField(
+                        controller: _passwordController,
+                        onChanged: onPasswordChanged,
+                        obscureText: !isPasswordVisible,
+                        decoration: InputDecoration(
+                          hintText: "password",
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(
+                            fontSize: 21,
+                            color: Color.fromARGB(255, 19, 19, 19),
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.13,
-                      height: double.infinity,
-
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(
+                          MediaQuery.of(context).size.width * 0.13,
+                          0,
+                        ),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: EdgeInsets.zero,
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          isPasswordVisible = !isPasswordVisible;
+                        });
+                      },
                       child: Center(
-                        child: Image.asset(
-                          'assets/icons/eye.png',
-                          height: 22,
-                          width: 22,
-                          color: const Color.fromARGB(255, 90, 90, 90),
+                        child: Icon(
+                          isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          size: 29,
                         ),
                       ),
                     ),
@@ -164,13 +272,20 @@ class Signup extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.check,
-                          color: const Color.fromARGB(255, 3, 247, 19),
+
+                          color:
+                              isPasswordLong
+                                  ? Colors.green
+                                  : const Color.fromARGB(255, 17, 17, 17),
                           size: 20,
                         ),
                         SizedBox(width: 5),
                         Text(
                           'Atleast 6 characters',
-                          style: TextStyle(fontSize: 18),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: isPasswordLong ? Colors.green : Colors.black,
+                          ),
                         ),
                       ],
                     ),
@@ -181,13 +296,20 @@ class Signup extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.check,
-                          color: const Color.fromARGB(255, 17, 17, 17),
+                          color:
+                              isPasswordLong
+                                  ? Colors.green
+                                  : const Color.fromARGB(255, 17, 17, 17),
                           size: 20,
                         ),
                         SizedBox(width: 5),
                         Text(
                           'Contains a number',
-                          style: TextStyle(fontSize: 18),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color:
+                                hasPasswordNumber ? Colors.green : Colors.black,
+                          ),
                         ),
                       ],
                     ),
@@ -196,35 +318,127 @@ class Signup extends StatelessWidget {
               ),
               Container(
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.07,
+                height: MediaQuery.of(context).size.height * 0.09,
                 margin: EdgeInsets.only(top: 20),
 
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(bRadius),
+                  borderRadius: BorderRadius.circular(30),
                 ),
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Login()),
-                    );
-                  },
+                child:
+                // isButtonEnabled
+                //     ? (Text('hey maurice'))
+                //     : (Text('hey dear')),
+                ElevatedButton(
+                  onPressed:
+                      isButtonEnabled
+                          ? () {
+                            setState(() {
+                              isEmailEmpty = _emailController.text.isEmpty;
+                              isPasswordEmpty =
+                                  _passwordController.text.isEmpty;
+
+                              emptyMessage =
+                                  isEmailEmpty && isPasswordEmpty
+                                      ? 'Enter email and password'
+                                      : '';
+                            });
+
+                            if (!isEmailEmpty && !isPasswordEmpty) {
+                              signUp(
+                                _emailController.text,
+                                _passwordController.text,
+                              );
+                            }
+                          }
+                          : () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor:
+                        isButtonEnabled
+                            ? Colors.green
+                            : const Color.fromARGB(255, 116, 142, 116),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(bRadius),
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: Text(
-                    'Sign up',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child:
+                      isButtonEnabled
+                          ? isLoading
+                              ? Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 15,
+                                      height: 15,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+
+                                        strokeWidth: 4,
+                                        strokeCap: StrokeCap.round,
+                                      ),
+                                    ),
+
+                                    SizedBox(width: 16),
+                                    Text(
+                                      'Processing data',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              : Text(
+                                'Sign up',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                          : Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 15,
+                                  height: 15,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+
+                                    strokeWidth: 4,
+                                    strokeCap: StrokeCap.round,
+                                  ),
+                                ),
+
+                                SizedBox(width: 16),
+                                Text(
+                                  'validating data',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
                 ),
               ),
+              if (emptyMessage.isNotEmpty)
+                Container(
+                  margin: EdgeInsets.only(top: 5),
+                  width: MediaQuery.of(context).size.width * 0.80,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    emptyMessage,
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              if (responseMessage.isNotEmpty)
+                Container(
+                  margin: EdgeInsets.only(top: 5),
+                  width: MediaQuery.of(context).size.width * 0.80,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    responseMessage,
+                    style: TextStyle(color: Colors.red, fontSize: 17),
+                  ),
+                ),
               Container(
                 margin: EdgeInsets.only(top: 20),
                 child: Center(
@@ -237,11 +451,11 @@ class Signup extends StatelessWidget {
 
               Container(
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.07,
+                height: MediaQuery.of(context).size.height * 0.09,
                 margin: EdgeInsets.only(top: 20),
 
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(bRadius),
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 child: ElevatedButton(
                   onPressed: () {
@@ -253,7 +467,7 @@ class Signup extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 199, 37, 37),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(bRadius),
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
 
@@ -281,24 +495,25 @@ class Signup extends StatelessWidget {
               Container(
                 width: double.infinity,
                 height: MediaQuery.of(context).size.width * 0.15,
-                margin: EdgeInsets.only(top: 20),
+                margin: EdgeInsets.only(top: 10),
 
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Already have an account?',
+                      'Already   have an account?',
                       style: TextStyle(
+                        fontWeight: FontWeight.w500,
                         fontSize: 18,
                       ),
                     ),
-                    SizedBox(width: 6),
+                    SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: () {
-                        print("Button pressed!");
+                        
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => Profile()),
+                          MaterialPageRoute(builder: (context) => MyProfile()),
                         );
                       },
                       style: ElevatedButton.styleFrom(
@@ -311,9 +526,9 @@ class Signup extends StatelessWidget {
                         shadowColor: Colors.transparent,
                       ),
                       child: Text(
-                        'Login',
+                        'Log in',
                         style: TextStyle(
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           color: Colors.green,
                           fontSize: 18,
                         ),
@@ -327,5 +542,12 @@ class Signup extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }

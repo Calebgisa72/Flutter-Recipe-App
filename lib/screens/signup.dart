@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/utils/constants.dart';
 import '../screens/login.dart';
 import 'myprofile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -40,11 +41,9 @@ class _SignupState extends State<Signup> {
       setState(() => isLoading = false);
     } catch (e) {
       if (e is FirebaseAuthException && e.code == 'email-already-in-use') {
-        
         setState(() => responseMessage = "email already in  use");
         setState(() => isLoading = false);
       } else {
-        
         setState(() => isLoading = false);
       }
     }
@@ -79,6 +78,7 @@ class _SignupState extends State<Signup> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         child: Container(
@@ -117,16 +117,13 @@ class _SignupState extends State<Signup> {
               Container(
                 margin: EdgeInsets.only(top: 20),
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.08,
+                height: MediaQuery.of(context).size.height * 0.07,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color:
-                        isEmailEmpty
-                            ? Colors.red
-                            : const Color.fromARGB(255, 205, 201, 201),
+                    color: isEmailEmpty ? Colors.red : textInputBorderColor,
                     width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(bRadius),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -135,11 +132,12 @@ class _SignupState extends State<Signup> {
                       margin: EdgeInsets.only(left: 20),
                       child: Image.asset(
                         'assets/icons/email.png',
-                        height: 27,
-                        width: 27,
+                        height: 20,
+                        width: 20,
+                        color: Colors.grey,
                       ),
                     ),
-                    SizedBox(width: 7),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Container(
                         child: TextFormField(
@@ -148,8 +146,8 @@ class _SignupState extends State<Signup> {
                             hintText: 'Enter email',
                             border: InputBorder.none,
                             hintStyle: TextStyle(
-                              fontSize: 21,
-                              color: Color.fromARGB(255, 19, 19, 19),
+                              fontSize: 18,
+                              color: Colors.grey,
                             ),
                           ),
                           onChanged: (value) {
@@ -182,16 +180,13 @@ class _SignupState extends State<Signup> {
               Container(
                 margin: EdgeInsets.only(top: 20),
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.08,
+                height: MediaQuery.of(context).size.height * 0.07,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color:
-                        isPasswordEmpty
-                            ? Colors.red
-                            : const Color.fromARGB(255, 205, 201, 201),
+                    color: isPasswordEmpty ? Colors.red : textInputBorderColor,
                     width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(bRadius),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -200,11 +195,12 @@ class _SignupState extends State<Signup> {
                       margin: EdgeInsets.only(left: 20),
                       child: Image.asset(
                         'assets/icons/lock.png',
-                        height: 27,
-                        width: 27,
+                        height: 20,
+                        width: 20,
+                        color: Colors.grey,
                       ),
                     ),
-                    SizedBox(width: 4),
+                    SizedBox(width: 12),
                     Expanded(
                       child: TextField(
                         controller: _passwordController,
@@ -214,8 +210,8 @@ class _SignupState extends State<Signup> {
                           hintText: "password",
                           border: InputBorder.none,
                           hintStyle: TextStyle(
-                            fontSize: 21,
-                            color: Color.fromARGB(255, 19, 19, 19),
+                            fontSize: 18,
+                            color: Colors.grey,
                           ),
                         ),
                       ),
@@ -318,17 +314,13 @@ class _SignupState extends State<Signup> {
               ),
               Container(
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.09,
+                height: MediaQuery.of(context).size.height * 0.07,
                 margin: EdgeInsets.only(top: 20),
 
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(bRadius),
                 ),
-                child:
-                // isButtonEnabled
-                //     ? (Text('hey maurice'))
-                //     : (Text('hey dear')),
-                ElevatedButton(
+                child: ElevatedButton(
                   onPressed:
                       isButtonEnabled
                           ? () {
@@ -354,10 +346,10 @@ class _SignupState extends State<Signup> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         isButtonEnabled
-                            ? Colors.green
+                            ? primaryColor
                             : const Color.fromARGB(255, 116, 142, 116),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(bRadius),
                     ),
                   ),
                   child:
@@ -451,11 +443,11 @@ class _SignupState extends State<Signup> {
 
               Container(
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.09,
+                height: MediaQuery.of(context).size.height * 0.07,
                 margin: EdgeInsets.only(top: 20),
 
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(bRadius),
                 ),
                 child: ElevatedButton(
                   onPressed: () {
@@ -467,7 +459,7 @@ class _SignupState extends State<Signup> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 199, 37, 37),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(bRadius),
                     ),
                   ),
 
@@ -495,22 +487,20 @@ class _SignupState extends State<Signup> {
               Container(
                 width: double.infinity,
                 height: MediaQuery.of(context).size.width * 0.15,
-                margin: EdgeInsets.only(top: 10),
+                margin: EdgeInsets.only(top: 20),
 
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Already   have an account?',
+                      'Already have an account?',
                       style: TextStyle(
-                        fontWeight: FontWeight.w500,
                         fontSize: 18,
                       ),
                     ),
-                    SizedBox(width: 8),
+                    SizedBox(width: 6),
                     ElevatedButton(
                       onPressed: () {
-                        
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => MyProfile()),
@@ -526,9 +516,9 @@ class _SignupState extends State<Signup> {
                         shadowColor: Colors.transparent,
                       ),
                       child: Text(
-                        'Log in',
+                        'Login',
                         style: TextStyle(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: Colors.green,
                           fontSize: 18,
                         ),

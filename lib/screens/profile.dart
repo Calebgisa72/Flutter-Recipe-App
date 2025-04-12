@@ -1,219 +1,348 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:flutter_recipe_app/utils/constants.dart';
+
+import 'package:iconsax/iconsax.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Profile extends StatefulWidget {
-  const Profile({super.key});
+  final DocumentSnapshot documentSnapshot;
+
+  const Profile({super.key, required this.documentSnapshot});
 
   @override
   _ProfileState createState() => _ProfileState();
 }
 
 class _ProfileState extends State<Profile> {
-  String selectedVar = 'follow';
+  String selectedFollowState = 'follow';
+
   String selectedVar2 = 'receipes';
+  DocumentSnapshot? _connectivityDoc;
+  List<String> favoriteDocIds = ['dummy-id'];
+
+  Future<void> _loadFavorites() async {
+    final ids = await getFavoriteDocumentIds();
+    setState(() => favoriteDocIds = ids.isNotEmpty ? ids : ['dummy-id']);
+    print('Favorites loaded: $favoriteDocIds');
+  }
+
+  Query get allRecipes {
+    final baseQuery = FirebaseFirestore.instance.collection('Recipe-App');
+
+    if (selectedVar2 == 'receipes') {
+      return baseQuery.where('userId', isEqualTo: userData['userId']);
+    } else {
+      return favoriteDocIds.isEmpty
+          ? baseQuery.where('__name__', isEqualTo: 'non-existent-id')
+          : baseQuery.where(FieldPath.documentId, whereIn: favoriteDocIds);
+    }
+  }
+
+  Future<List<String>> getFavoriteDocumentIds() async {
+    final userData = widget.documentSnapshot.data() as Map<String, dynamic>;
+    final navuserId = userData['userId'];
+    if (navuserId == null) return [];
+
+    final snapshot =
+        await FirebaseFirestore.instance
+            .collection('UserFavorite')
+            .where('favoriteBy', arrayContains: navuserId)
+            .get();
+
+    return snapshot.docs.map((doc) => doc.id).toList();
+  }
+
+  Stream<QuerySnapshot>? _connectivityStream;
+
+  int get followersCount =>
+      (_connectivityDoc?['Followedby'] as List?)?.length ?? 0;
+  int get followingCount =>
+      (_connectivityDoc?['Follows'] as List?)?.length ?? 0;
+
+  late Map<String, dynamic> userData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+    _loadFavorites();
+    userData = widget.documentSnapshot.data() as Map<String, dynamic>;
+  }
+
+  String? loggedInUserId;
+
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      loggedInUserId = prefs.getString('uid');
+    });
+  }
+
+  Future<void> followUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loggedInUserId = prefs.getString('uid');
+    if (loggedInUserId == null) return;
+
+    final userData = widget.documentSnapshot.data() as Map<String, dynamic>;
+    final targetUserId = userData['userId'];
+
+    await FirebaseFirestore.instance
+        .collection('Connectivity')
+        .doc(targetUserId)
+        .update({
+          'Followedby': FieldValue.arrayUnion([loggedInUserId]),
+        });
+  }
+
+  Future<void> unfollowUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loggedInUserId = prefs.getString('uid');
+    if (loggedInUserId == null) return;
+
+    final userData = widget.documentSnapshot.data() as Map<String, dynamic>;
+    final targetUserId = userData['userId'];
+
+    await FirebaseFirestore.instance
+        .collection('Connectivity')
+        .doc(targetUserId)
+        .update({
+          'Followedby': FieldValue.arrayRemove([loggedInUserId]),
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         child: Container(
-          margin: EdgeInsets.only(top: 30),
           width: MediaQuery.of(context).size.width * 1,
-          height: MediaQuery.of(context).size.height * 0.96,
+          height: MediaQuery.of(context).size.height * 1,
 
           child: Container(
-            margin: EdgeInsets.only(top: 20),
+            margin: EdgeInsets.only(top: 18),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                SizedBox(height: 12),
                 Container(
-                  width: MediaQuery.of(context).size.width * 0.9,
+                  width: MediaQuery.of(context).size.width * 0.94,
 
-                  height: MediaQuery.of(context).size.height * 0.05,
+                  height: MediaQuery.of(context).size.height * 0.065,
 
                   alignment: Alignment.centerRight,
                   padding: EdgeInsets.all(3),
-                  child: Icon(
-                    Icons.share,
-                    color: const Color.fromARGB(255, 26, 25, 25),
-                    size: 28,
-                  ),
-                ),
-                Container(
-                  margin: EdgeInsets.only(top: 20),
-                  child: ClipRRect(
-                    borderRadius: BorderRadiusDirectional.circular(130),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.35,
-                      height: MediaQuery.of(context).size.height * 0.17,
-
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadiusDirectional.circular(130),
-                        border: Border.all(
-                          color: const Color.fromARGB(255, 16, 15, 15),
-                          width: 1,
-                        ),
-                        image: DecorationImage(
-                          image: AssetImage('assets/icons/profile.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  margin: EdgeInsets.only(top: 15),
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  height: MediaQuery.of(context).size.height * 0.05,
-
-                  child: Center(
-                    child: Text(
-                      'Kido  Martin',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20),
-
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      width: 1,
-                      color: const Color.fromARGB(255, 149, 147, 147),
-                    ),
-                  ),
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  height: MediaQuery.of(context).size.width * 0.15,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        selectedVar =
-                            (selectedVar == 'follow') ? 'Unfollow' : 'follow';
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          selectedVar == 'follow'
-                              ? const Color.fromARGB(255, 39, 239, 4)
-                              : const Color.fromARGB(255, 102, 114, 100),
-
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 15,
-                      ),
-                      textStyle: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 5,
-                      shadowColor: Colors.black54,
-                    ),
-                    child: Text(
-                      selectedVar == 'follow' ? 'Follow' : 'Unfollow',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 20),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  height: MediaQuery.of(context).size.height * 0.09,
-
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.25,
-                        height: MediaQuery.of(context).size.height * 1,
+                      Container(
+                        width: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        height: double.infinity,
 
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '32',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 19,
-                              ),
-                            ),
-                            Text(
-                              'Receipes',
-                              style: TextStyle(
-                                fontSize: 19,
-                                color: const Color.fromARGB(255, 150, 152, 152),
-                              ),
-                            ),
-                          ],
+                        child: Center(
+                          child: IconButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            icon: Icon(Icons.arrow_back, size: 30),
+                          ),
                         ),
                       ),
 
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.25,
-                        height: MediaQuery.of(context).size.height * 1,
+                      Container(
+                        width: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        height: double.infinity,
 
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '707',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 19,
-                              ),
-                            ),
-                            Text(
-                              'Following',
-                              style: TextStyle(
-                                fontSize: 19,
-                                color: const Color.fromARGB(255, 150, 152, 152),
-                              ),
-                            ),
-                          ],
+                        child: Center(
+                          child: IconButton(
+                            onPressed: () => {},
+                            icon: Icon(Iconsax.notification, size: 28),
+                          ),
                         ),
                       ),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.25,
-                        height: MediaQuery.of(context).size.height * 1,
+                    ],
+                  ),
+                ),
 
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '1,200',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 19,
-                              ),
-                            ),
-                            Text(
-                              'Followers',
-                              style: TextStyle(
-                                fontSize: 19,
-                                color: const Color.fromARGB(255, 150, 152, 152),
-                              ),
-                            ),
-                          ],
+                Column(
+                  children: [
+                    Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(width: 1, color: Colors.black),
+                        image: DecorationImage(
+                          image: NetworkImage(
+                            userData['profilePhoto'] as String,
+                          ),
+                          fit: BoxFit.cover,
                         ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      userData['fullNames'] as String,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    // Followers/following counts
+                    StreamBuilder<QuerySnapshot>(
+                      stream:
+                          FirebaseFirestore.instance
+                              .collection('Connectivity')
+                              .where(
+                                FieldPath.documentId,
+                                isEqualTo: userData['userId'],
+                              )
+                              .snapshots(),
+                      builder: (context, snapshot) {
+                        final counts =
+                            snapshot.hasData && snapshot.data!.docs.isNotEmpty
+                                ? snapshot.data!.docs.first.data()
+                                    as Map<String, dynamic>
+                                : null;
+
+                        return StreamBuilder<QuerySnapshot>(
+                          stream:
+                              FirebaseFirestore.instance
+                                  .collection('Recipe-App')
+                                  .where(
+                                    'userId',
+                                    isEqualTo: userData['userId'],
+                                  )
+                                  .snapshots(),
+                          builder: (context, recipeSnapshot) {
+                            final recipesCount =
+                                recipeSnapshot.hasData
+                                    ? recipeSnapshot.data!.docs.length
+                                    : 0;
+
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildCountTile('Recipes', recipesCount),
+                                _buildCountTile(
+                                  'Followers',
+                                  (counts?['Followedby'] as List?)?.length ?? 0,
+                                ),
+                                _buildCountTile(
+                                  'Following',
+                                  (counts?['Follows'] as List?)?.length ?? 0,
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.94,
+                  height: MediaQuery.of(context).size.height * 0.08,
+
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      StreamBuilder<DocumentSnapshot>(
+                        stream:
+                            FirebaseFirestore.instance
+                                .collection('Connectivity')
+                                .doc(userData['userId'])
+                                .snapshots(),
+                        builder: (context, snapshot) {
+                          final isFollowing =
+                              snapshot.hasData
+                                  ? (snapshot.data!['Followedby'] as List?)
+                                          ?.contains(loggedInUserId) ??
+                                      false
+                                  : false;
+
+                          return ElevatedButton(
+                            onPressed: () async {
+                              if (isFollowing) {
+                                await unfollowUser();
+                              } else {
+                                await followUser();
+                              }
+                            },
+
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isFollowing
+                                      ? const Color.fromARGB(255, 102, 114, 100)
+                                      : primaryColor,
+                              shadowColor: const Color.fromARGB(0, 174, 10, 10),
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(bRadius),
+                              ),
+                              minimumSize: Size(
+                                MediaQuery.of(context).size.width * 0.37,
+                                MediaQuery.of(context).size.height * 0.07,
+                              ),
+                            ),
+                            child: Text(
+                              isFollowing ? 'Unfollow' : 'Follow',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: 12),
+
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            81,
+                            78,
+                            108,
+                          ),
+                          shadowColor: const Color.fromARGB(0, 174, 10, 10),
+                          padding: EdgeInsets.zero,
+
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(bRadius),
+                          ),
+                          minimumSize: Size(
+                            MediaQuery.of(context).size.width * 0.20,
+                            MediaQuery.of(context).size.height * 0.07,
+                          ),
+                        ),
+                        child: Icon(Icons.edit, color: Colors.white, size: 26),
                       ),
                     ],
                   ),
                 ),
                 Container(
                   margin: EdgeInsets.only(top: 20),
-                  width: MediaQuery.of(context).size.width * 0.9,
+                  width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.width * 0.1,
 
                   child: Row(
@@ -246,13 +375,14 @@ class _ProfileState extends State<Profile> {
                             elevation: 0,
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
+                            splashFactory: NoSplash.splashFactory,
                             surfaceTintColor: Colors.transparent,
                             padding: EdgeInsets.zero,
                           ),
                           child: (Text(
                             'Receipes',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 17,
                               color: Colors.black,
                               fontWeight:
                                   selectedVar2 == 'receipes'
@@ -288,35 +418,76 @@ class _ProfileState extends State<Profile> {
                             elevation: 0,
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
-                            surfaceTintColor: Colors.transparent,
+                            splashFactory: NoSplash.splashFactory,
                             padding: EdgeInsets.zero,
                           ),
-                          child: (Text(
+                          child: Text(
                             'Liked',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 17,
                               color: Colors.black,
                               fontWeight:
-                                  selectedVar == 'liked'
+                                  selectedVar2 == 'liked'
                                       ? FontWeight.bold
                                       : FontWeight.normal,
                             ),
-                          )),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.only(top: 17),
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  height: MediaQuery.of(context).size.height * 0.27,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      width: 1,
-                      color: const Color.fromARGB(255, 140, 137, 137),
-                    ),
+                  decoration: BoxDecoration(),
+                  width: MediaQuery.of(context).size.width * 0.94,
+                  height: MediaQuery.of(context).size.height * 0.42,
+
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: allRecipes.snapshots(),
+                    builder: (
+                      context,
+                      AsyncSnapshot<QuerySnapshot> recipeSnapshot,
+                    ) {
+                      if (recipeSnapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ${recipeSnapshot.error}'),
+                        );
+                      }
+
+                      if (recipeSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!recipeSnapshot.hasData ||
+                          recipeSnapshot.data!.docs.isEmpty) {
+                        return Center(child: Text('No recipes found.'));
+                      }
+
+                      final List<DocumentSnapshot> recipes =
+                          recipeSnapshot.data!.docs;
+
+                      return Container(
+                        width: double.infinity,
+
+                        child: GridView.builder(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 0,
+                                crossAxisSpacing: 15,
+                                childAspectRatio: 0.78,
+                              ),
+                          itemCount: recipes.length,
+                          itemBuilder: (context, index) {
+                            return FoodItemsDisplay(
+                              documentSnapshot: recipes[index],
+                            );
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -326,4 +497,18 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
+
+  Widget _buildCountTile(String label, int count) => SizedBox(
+    width: MediaQuery.of(context).size.width * 0.17,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          count.toString(),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19),
+        ),
+        Text(label, style: TextStyle(fontSize: 14, color: Colors.black)),
+      ],
+    ),
+  );
 }

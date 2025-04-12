@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
+import 'package:flutter_recipe_app/screens/profile.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -134,40 +135,10 @@ class _DetailState extends State<Details> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 38,
-                                    height: 38,
-                                    clipBehavior: Clip.hardEdge,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                        bRadius,
-                                      ),
-                                      border: Border.all(
-                                        width: 1,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                    child: Image.asset(
-                                      'assets/icons/profile.png',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Expanded(
-                                    child: Text(
-                                      'Elen Shebah',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 17,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                              child: buildUserDetails(
+                                widget.documentSnapshot['userId'],
                               ),
                             ),
-
                             Expanded(
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
@@ -394,4 +365,75 @@ class _DetailState extends State<Details> {
       ),
     );
   }
+}
+
+Widget buildUserDetails(String userId) {
+  print('User ID received: $userId');
+
+  return StreamBuilder<QuerySnapshot>(
+    stream:
+        FirebaseFirestore.instance
+            .collection('Users')
+            .where('userId', isEqualTo: userId)
+            .snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) return CircularProgressIndicator();
+
+      var docs = snapshot.data!.docs;
+
+      if (docs.isEmpty) {
+        return Center(child: Text('User not found'));
+      }
+
+      var documentSnapshot = docs.first;
+      var data = documentSnapshot.data() as Map<String, dynamic>;
+      String fullNames = data['fullNames'] ?? 'No name';
+      String profilePhoto = data['profilePhoto'] ?? '';
+
+      return Row(
+        children: [
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => Profile(documentSnapshot: documentSnapshot),
+                ),
+              );
+            },
+            child: Container(
+              width: 38,
+              height: 38,
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(bRadius),
+                border: Border.all(width: 1, color: Colors.black),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child:
+                  profilePhoto.isNotEmpty
+                      ? Image.network(profilePhoto, fit: BoxFit.cover)
+                      : Icon(Icons.person, size: 20),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              fullNames,
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 17),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }

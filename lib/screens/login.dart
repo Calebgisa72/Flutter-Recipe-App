@@ -3,7 +3,6 @@ import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
-
 import 'myprofile.dart';
 import '../screens/signup.dart';
 
@@ -39,25 +38,22 @@ class _LoginState extends State<Login> {
     setState(() => isLoading = true);
 
     try {
-      
       UserCredential userCred = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
           );
-      
+
       String uid = userCred.user!.uid;
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('uid', uid);
-      
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => AppMainScreen()),
       );
     } on FirebaseAuthException catch (e) {
-      
-
       if (e.code == 'user-not-found') {
         setState(() => responseMessage = 'User does not exist');
       } else if (e.code == 'wrong-password') {
@@ -65,10 +61,8 @@ class _LoginState extends State<Login> {
       } else {
         setState(() => responseMessage = 'Incorrect password or email');
       }
-      
     } catch (e) {
       setState(() => responseMessage = 'An error occurred');
-      
     } finally {
       setState(() => isLoading = false);
     }
@@ -93,18 +87,18 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         child: Container(
-          color: bgColor2,
-          height: MediaQuery.of(context).size.height * 1,
+          margin: EdgeInsets.only(top: 100),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
                 width: double.infinity,
-                height: MediaQuery.of(context).size.height * 0.13,
+                height: MediaQuery.of(context).size.height * 0.10,
 
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -121,7 +115,7 @@ class _LoginState extends State<Login> {
                     Text(
                       'Please enter your account here',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         color: const Color.fromARGB(255, 96, 93, 93),
                       ),
                     ),
@@ -131,13 +125,13 @@ class _LoginState extends State<Login> {
               Container(
                 margin: EdgeInsets.only(top: 20),
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.08,
+                height: MediaQuery.of(context).size.height * 0.07,
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: emailerror ? Colors.red : textInputBorderColor,
                     width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(bRadius),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -146,11 +140,12 @@ class _LoginState extends State<Login> {
                       margin: EdgeInsets.only(left: 20),
                       child: Image.asset(
                         'assets/icons/email.png',
-                        height: 27,
-                        width: 27,
+                        height: 20,
+                        width: 20,
+                        color: Colors.grey,
                       ),
                     ),
-                    SizedBox(width: 7),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Container(
                         child: TextFormField(
@@ -159,8 +154,8 @@ class _LoginState extends State<Login> {
                             hintText: 'Enter email',
                             border: InputBorder.none,
                             hintStyle: TextStyle(
-                              fontSize: 21,
-                              color: Color.fromARGB(255, 19, 19, 19),
+                              fontSize: 18,
+                              color: Colors.grey,
                             ),
                           ),
                           onChanged: (value) {
@@ -180,13 +175,13 @@ class _LoginState extends State<Login> {
               Container(
                 margin: EdgeInsets.only(top: 20),
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.08,
+                height: MediaQuery.of(context).size.height * 0.07,
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: isPasswordLong ? textInputBorderColor : Colors.red,
                     width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(bRadius),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -195,11 +190,12 @@ class _LoginState extends State<Login> {
                       margin: EdgeInsets.only(left: 20),
                       child: Image.asset(
                         'assets/icons/lock.png',
-                        height: 27,
-                        width: 27,
+                        height: 20,
+                        width: 20,
+                        color: Colors.grey,
                       ),
                     ),
-                    SizedBox(width: 4),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Container(
                         child: TextField(
@@ -207,11 +203,11 @@ class _LoginState extends State<Login> {
                           onChanged: onPasswordChanged,
                           obscureText: !isPasswordVisible,
                           decoration: InputDecoration(
-                            hintText: "password",
+                            hintText: "Password",
                             border: InputBorder.none,
                             hintStyle: TextStyle(
-                              fontSize: 21,
-                              color: Color.fromARGB(255, 19, 19, 19),
+                              fontSize: 18,
+                              color: Colors.grey,
                             ),
                           ),
                         ),
@@ -248,7 +244,7 @@ class _LoginState extends State<Login> {
 
               Container(
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.04,
+                height: MediaQuery.of(context).size.height * 0.07,
                 margin: EdgeInsets.only(top: 10),
 
                 child: Align(
@@ -262,11 +258,11 @@ class _LoginState extends State<Login> {
                       padding: EdgeInsets.zero,
                     ),
                     child: Text(
-                      'Forget password ?',
+                      'Forget password?',
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
+                        color: foreGround,
+                        fontWeight: FontWeight.normal
                       ),
                     ),
                   ),
@@ -274,11 +270,11 @@ class _LoginState extends State<Login> {
               ),
               Container(
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.09,
+                height: MediaQuery.of(context).size.height * 0.07,
                 margin: EdgeInsets.only(top: 20),
 
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(bRadius),
                 ),
                 child: ElevatedButton(
                   onPressed:
@@ -302,10 +298,10 @@ class _LoginState extends State<Login> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         isButtonEnabled
-                            ? Colors.green
+                            ? primaryColor
                             : const Color.fromARGB(255, 125, 137, 126),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(bRadius),
                     ),
                   ),
                   child:
@@ -379,11 +375,11 @@ class _LoginState extends State<Login> {
 
               Container(
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: MediaQuery.of(context).size.height * 0.09,
+                height: MediaQuery.of(context).size.height * 0.07,
                 margin: EdgeInsets.only(top: 20),
 
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(bRadius),
                 ),
                 child: ElevatedButton(
                   onPressed: () {
@@ -395,7 +391,7 @@ class _LoginState extends State<Login> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 199, 37, 37),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(bRadius),
                     ),
                   ),
 
@@ -423,13 +419,13 @@ class _LoginState extends State<Login> {
               Container(
                 width: double.infinity,
                 height: MediaQuery.of(context).size.width * 0.15,
-                margin: EdgeInsets.only(top: 10),
+                margin: EdgeInsets.only(top: 20),
 
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Dont you have an account?',
+                      'Don\'t you have an account?',
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 18,
@@ -438,7 +434,6 @@ class _LoginState extends State<Login> {
                     SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: () {
-                        
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => Signup()),
@@ -453,7 +448,7 @@ class _LoginState extends State<Login> {
                       child: Text(
                         'Sign up',
                         style: TextStyle(
-                          fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           color: Colors.green,
                           fontSize: 18,
                         ),

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:flutter_recipe_app/screens/login.dart';
+import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Entrypage extends StatefulWidget {
@@ -43,11 +44,11 @@ class _EntrypageState extends State<Entrypage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        margin: EdgeInsets.only(top: 0),
+        margin: EdgeInsets.only(top: 20),
 
         decoration: BoxDecoration(
           border: Border(),
-          color: const Color.fromARGB(255, 233, 230, 230),
+          color: bgColor,
         ),
 
         child: Column(
@@ -88,7 +89,7 @@ class _EntrypageState extends State<Entrypage> {
                 children: [
                   Center(
                     child: Text(
-                      'Lets join Our Community',
+                      'Join Our Community',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -112,15 +113,15 @@ class _EntrypageState extends State<Entrypage> {
             ),
 
             Container(
-              width: MediaQuery.of(context).size.width * 0.85,
-              height: MediaQuery.of(context).size.height * 0.09,
+              width: MediaQuery.of(context).size.width * 0.6,
+              height: MediaQuery.of(context).size.height * 0.075,
               margin: EdgeInsets.only(top: 40),
               child: ElevatedButton(
                 onPressed: () => {checkLoginStatus()},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: primaryColor,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(bRadius),
                   ),
                 ),
                 child:

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/screens/favorite_screen.dart';
 import 'package:flutter_recipe_app/screens/home_screen.dart';
 import 'package:flutter_recipe_app/screens/myprofile.dart';
-import 'package:flutter_recipe_app/screens/profile.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 

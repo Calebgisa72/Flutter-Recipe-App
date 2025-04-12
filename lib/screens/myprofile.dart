@@ -134,13 +134,14 @@ class _MyProfileState extends State<MyProfile> {
         child: Container(
           width: MediaQuery.of(context).size.width * 1,
           height: MediaQuery.of(context).size.height * 0.97,
-
+          color: bgColor,
           child: Container(
             margin: EdgeInsets.only(top: 20),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                SizedBox(height: 30),
                 SizedBox(height: 30),
                 Container(
                   width: MediaQuery.of(context).size.width * 0.94,
@@ -160,7 +161,7 @@ class _MyProfileState extends State<MyProfile> {
                     child: Center(
                       child: IconButton(
                         onPressed: () => {},
-                        icon: Icon(Iconsax.notification, size: 33),
+                        icon: Icon(Iconsax.notification, size: 25),
                       ),
                     ),
                   ),
@@ -188,15 +189,18 @@ class _MyProfileState extends State<MyProfile> {
 
                     return Container(
                       width: MediaQuery.of(context).size.width * 0.94,
+                      height: MediaQuery.of(context).size.height * 0.32,
+                      decoration: BoxDecoration(),
 
                       child: Column(
                         children: [
                           Container(
                             width: 130,
                             height: 130,
+
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(width: 1, color: Colors.black),
+
                               image: DecorationImage(
                                 image: NetworkImage(
                                   userData['profilePhoto'] as String,
@@ -205,7 +209,7 @@ class _MyProfileState extends State<MyProfile> {
                               ),
                             ),
                           ),
-                          SizedBox(height: 16),
+                          SizedBox(height: 10),
                           Text(
                             userData['fullNames'] as String,
                             style: TextStyle(
@@ -213,8 +217,8 @@ class _MyProfileState extends State<MyProfile> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 16),
-                          // Followers/following counts
+                          SizedBox(height: 10),
+
                           StreamBuilder<QuerySnapshot>(
                             stream:
                                 FirebaseFirestore.instance
@@ -274,7 +278,7 @@ class _MyProfileState extends State<MyProfile> {
                     );
                   },
                 ),
-                SizedBox(height: 20),
+
                 Container(
                   width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.height * 0.08,
@@ -296,7 +300,6 @@ class _MyProfileState extends State<MyProfile> {
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(width: 2, color: Colors.black),
                           ),
                           minimumSize: Size(
                             MediaQuery.of(context).size.width * 0.37,
@@ -321,7 +324,6 @@ class _MyProfileState extends State<MyProfile> {
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(width: 2, color: Colors.black),
                           ),
                           minimumSize: Size(
                             MediaQuery.of(context).size.width * 0.37,
@@ -348,10 +350,8 @@ class _MyProfileState extends State<MyProfile> {
                   ),
                 ),
 
-                SizedBox(height: 2),
-
                 Container(
-                  margin: EdgeInsets.only(top: 20),
+                  margin: EdgeInsets.only(top: 4),
                   width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.width * 0.1,
 
@@ -381,11 +381,13 @@ class _MyProfileState extends State<MyProfile> {
                         child: ElevatedButton(
                           onPressed:
                               () => setState(() => selectedVar2 = 'receipes'),
+
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
                             splashFactory: NoSplash.splashFactory,
+
                             surfaceTintColor: Colors.transparent,
                             padding: EdgeInsets.zero,
                           ),
@@ -393,6 +395,7 @@ class _MyProfileState extends State<MyProfile> {
                             'Receipes',
                             style: TextStyle(
                               fontSize: 17,
+
                               color: Colors.black,
                               fontWeight:
                                   selectedVar2 == 'receipes'
@@ -448,9 +451,9 @@ class _MyProfileState extends State<MyProfile> {
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.only(top: 0),
                   width: MediaQuery.of(context).size.width * 0.94,
-                  height: MediaQuery.of(context).size.height * 0.39,
+                  height: MediaQuery.of(context).size.height * 0.33,
+                  decoration: BoxDecoration(),
 
                   child: StreamBuilder<QuerySnapshot>(
                     stream: allRecipes.snapshots(),
@@ -486,12 +489,13 @@ class _MyProfileState extends State<MyProfile> {
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                mainAxisSpacing: 4,
+                                mainAxisSpacing: 0,
                                 crossAxisSpacing: 15,
                                 childAspectRatio:
-                                    selectedVar2 == 'receipes' ? 0.63 : 0.72,
+                                    selectedVar2 == 'receipes' ? 0.63 : 0.68,
                               ),
                           itemCount: recipes.length,
+                          padding: EdgeInsets.all(0),
                           itemBuilder: (context, index) {
                             return SizedBox(
                               child: Column(

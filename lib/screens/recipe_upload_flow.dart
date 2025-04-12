@@ -5,6 +5,7 @@ import 'package:flutter_recipe_app/forms/image_upload.dart';
 import 'package:flutter_recipe_app/forms/ingredients_form.dart';
 import 'package:flutter_recipe_app/models/recipe_model.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
+import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 
 class RecipeFormFlow extends StatefulWidget {
@@ -219,6 +220,14 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
                           onPressed: () {
                             Navigator.pop(context);
                             tabProvider.setSelectedTab(0);
+                            widget.edit
+                                ? Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AppMainScreen(),
+                                  ),
+                                )
+                                : () {};
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryColor,

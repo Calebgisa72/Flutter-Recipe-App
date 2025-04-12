@@ -293,7 +293,7 @@ class _SignupState extends State<Signup> {
                         Icon(
                           Icons.check,
                           color:
-                              isPasswordLong
+                              hasPasswordNumber
                                   ? Colors.green
                                   : const Color.fromARGB(255, 17, 17, 17),
                           size: 20,
@@ -494,9 +494,7 @@ class _SignupState extends State<Signup> {
                   children: [
                     Text(
                       'Already have an account?',
-                      style: TextStyle(
-                        fontSize: 18,
-                      ),
+                      style: TextStyle(fontSize: 18),
                     ),
                     SizedBox(width: 6),
                     ElevatedButton(

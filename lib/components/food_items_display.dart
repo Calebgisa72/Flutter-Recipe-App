@@ -67,7 +67,7 @@ class FoodItemsDisplay extends StatelessWidget {
                     Icon(Iconsax.clock, size: 16, color: Colors.grey),
                     SizedBox(width: 5),
                     Text(
-                      documentSnapshot['time'],
+                      documentSnapshot['time'].toString(),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,

@@ -130,7 +130,7 @@ class FavoriteScreen extends StatelessWidget {
                                             ),
                                             SizedBox(width: 5),
                                             Text(
-                                              favoriteItem['time'],
+                                              favoriteItem['time'].toString(),
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,

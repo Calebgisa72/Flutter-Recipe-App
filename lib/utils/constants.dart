@@ -10,3 +10,6 @@ const foreGround = Color.fromARGB(255, 0, 0, 0);
 
 // Border-Radius
 const double bRadius = 20;
+
+const bgColor2 = Color.fromARGB(255, 207, 212, 210);
+const textInputBorderColor = Color.fromARGB(255, 116, 113, 113);

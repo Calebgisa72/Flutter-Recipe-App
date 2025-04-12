@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/screens/favorite_screen.dart';
 import 'package:flutter_recipe_app/screens/home_screen.dart';
+import 'package:flutter_recipe_app/screens/myprofile.dart';
+import 'package:flutter_recipe_app/screens/profile.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -19,7 +21,7 @@ class _AppMainScreenState extends State<AppMainScreen> {
     pages = [
       HomeScreen(),
       FavoriteScreen(),
-      navBarPage(Iconsax.calendar5),
+      MyProfile(),
       navBarPage(Iconsax.setting_21),
     ];
     super.initState();
@@ -59,7 +61,7 @@ class _AppMainScreenState extends State<AppMainScreen> {
             icon: Icon(
               selectedIndex == 2 ? Iconsax.calendar5 : Iconsax.calendar,
             ),
-            label: "Meal Plan",
+            label: "Profile",
           ),
           BottomNavigationBarItem(
             icon: Icon(

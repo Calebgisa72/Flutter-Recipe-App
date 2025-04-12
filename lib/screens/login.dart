@@ -262,7 +262,7 @@ class _LoginState extends State<Login> {
                       style: TextStyle(
                         fontSize: 18,
                         color: foreGround,
-                        fontWeight: FontWeight.normal
+                        fontWeight: FontWeight.normal,
                       ),
                     ),
                   ),
@@ -385,7 +385,7 @@ class _LoginState extends State<Login> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => MyProfile()),
+                      MaterialPageRoute(builder: (context) => AppMainScreen()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -448,7 +448,7 @@ class _LoginState extends State<Login> {
                       child: Text(
                         'Sign up',
                         style: TextStyle(
-                            fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w500,
                           color: Colors.green,
                           fontSize: 18,
                         ),

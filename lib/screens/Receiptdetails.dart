@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
+import 'package:flutter_recipe_app/screens/profile.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -131,21 +132,39 @@ class _DetailState extends State<Details> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  Container(
-                                    width: 38,
-                                    height: 38,
-                                    clipBehavior: Clip.hardEdge,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                        bRadius,
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => Profile(),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 38,
+                                      height: 38,
+                                      clipBehavior: Clip.hardEdge,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          bRadius,
+                                        ),
+                                        border: Border.all(
+                                          width: 1,
+                                          color: Colors.black,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black26,
+                                            blurRadius: 4,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
                                       ),
-                                      border: Border.all(
-                                        width: 1,
-                                        color: Colors.black,
+                                      child: Image.asset(
+                                        'assets/icons/profile.png',
                                       ),
-                                    ),
-                                    child: Image.asset(
-                                      'assets/icons/profile.png',
                                     ),
                                   ),
                                   const SizedBox(width: 10),

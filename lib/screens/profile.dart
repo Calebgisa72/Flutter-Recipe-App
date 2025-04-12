@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_recipe_app/screens/home_screen.dart';
+
 class Profile extends StatefulWidget {
   const Profile({super.key});
 
@@ -9,6 +13,9 @@ class Profile extends StatefulWidget {
 class _ProfileState extends State<Profile> {
   String selectedVar = 'follow';
   String selectedVar2 = 'receipes';
+
+  Query get allRecipes => FirebaseFirestore.instance.collection('Recipe-App');
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,10 +39,50 @@ class _ProfileState extends State<Profile> {
 
                   alignment: Alignment.centerRight,
                   padding: EdgeInsets.all(3),
-                  child: Icon(
-                    Icons.share,
-                    color: const Color.fromARGB(255, 26, 25, 25),
-                    size: 28,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomeScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.arrow_back,
+                          size: 33,
+                          color: Colors.black, // Customize icon color
+                        ),
+                      ),
+
+                      // Share Button (ElevatedButton)
+                      ElevatedButton(
+                        onPressed: () {
+                          // Add your share functionality here
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                        ),
+                        child: Icon(Icons.share, size: 28, color: Colors.black),
+                      ),
+                    ],
                   ),
                 ),
                 Container(
@@ -78,51 +125,6 @@ class _ProfileState extends State<Profile> {
                 ),
                 SizedBox(height: 20),
 
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      width: 1,
-                      color: const Color.fromARGB(255, 149, 147, 147),
-                    ),
-                  ),
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  height: MediaQuery.of(context).size.width * 0.15,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        selectedVar =
-                            (selectedVar == 'follow') ? 'Unfollow' : 'follow';
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          selectedVar == 'follow'
-                              ? const Color.fromARGB(255, 39, 239, 4)
-                              : const Color.fromARGB(255, 102, 114, 100),
-
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 15,
-                      ),
-                      textStyle: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 5,
-                      shadowColor: Colors.black54,
-                    ),
-                    child: Text(
-                      selectedVar == 'follow' ? 'Follow' : 'Unfollow',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 20),
                 SizedBox(
                   width: MediaQuery.of(context).size.width * 0.9,
                   height: MediaQuery.of(context).size.height * 0.09,
@@ -182,6 +184,7 @@ class _ProfileState extends State<Profile> {
                           ],
                         ),
                       ),
+
                       SizedBox(
                         width: MediaQuery.of(context).size.width * 0.25,
                         height: MediaQuery.of(context).size.height * 1,
@@ -208,6 +211,48 @@ class _ProfileState extends State<Profile> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+
+                SizedBox(height: 20),
+
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  height: MediaQuery.of(context).size.width * 0.15,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        selectedVar =
+                            (selectedVar == 'follow') ? 'Unfollow' : 'follow';
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          selectedVar == 'follow'
+                              ? const Color.fromARGB(255, 39, 239, 4)
+                              : const Color.fromARGB(255, 102, 114, 100),
+
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 15,
+                      ),
+                      textStyle: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      elevation: 5,
+                      shadowColor: Colors.black54,
+                    ),
+                    child: Text(
+                      selectedVar == 'follow' ? 'Follow' : 'Unfollow',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
                 Container(
@@ -310,12 +355,60 @@ class _ProfileState extends State<Profile> {
                   margin: EdgeInsets.only(top: 17),
                   width: MediaQuery.of(context).size.width * 0.9,
                   height: MediaQuery.of(context).size.height * 0.27,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      width: 1,
-                      color: const Color.fromARGB(255, 140, 137, 137),
-                    ),
+
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: allRecipes.snapshots(),
+                    builder: (
+                      context,
+                      AsyncSnapshot<QuerySnapshot> recipeSnapshot,
+                    ) {
+                      if (recipeSnapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ${recipeSnapshot.error}'),
+                        );
+                      }
+
+                      if (recipeSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!recipeSnapshot.hasData ||
+                          recipeSnapshot.data!.docs.isEmpty) {
+                        return Center(child: Text('No recipes found.'));
+                      }
+
+                      final List<DocumentSnapshot> recipes =
+                          recipeSnapshot.data!.docs;
+
+                      return Container(
+                        constraints: BoxConstraints(
+                          minHeight: MediaQuery.of(context).size.height,
+                        ),
+                        child: GridView.builder(
+                          padding: EdgeInsets.zero,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.8,
+                                mainAxisSpacing: 20,
+                                crossAxisSpacing: 15,
+                              ),
+                          itemCount: recipes.length,
+                          itemBuilder: (context, index) {
+                            return ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: 250,
+                                minHeight: 200,
+                              ),
+                              child: FoodItemsDisplay(
+                                documentSnapshot: recipes[index],
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

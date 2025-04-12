@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:flutter_recipe_app/screens/home_screen.dart';
 
 class MyProfile extends StatefulWidget {
   const MyProfile({super.key});
@@ -9,6 +12,8 @@ class MyProfile extends StatefulWidget {
 
 class _ProfileState extends State<MyProfile> {
   String selectedVar = 'receipes';
+
+  Query get allRecipes => FirebaseFirestore.instance.collection('Recipe-App');
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,15 +32,59 @@ class _ProfileState extends State<MyProfile> {
               children: [
                 Container(
                   width: MediaQuery.of(context).size.width * 0.9,
-
+                  decoration: BoxDecoration(),
                   height: MediaQuery.of(context).size.height * 0.05,
 
                   alignment: Alignment.centerRight,
                   padding: EdgeInsets.all(3),
-                  child: Icon(
-                    Icons.share,
-                    color: const Color.fromARGB(255, 26, 25, 25),
-                    size: 28,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Back Button (ElevatedButton)
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomeScreen(),
+                            ),
+                          ); // Navigate back
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Colors.transparent, // Make background transparent
+                          elevation: 0, // Remove shadow
+                          padding: EdgeInsets.zero, // Remove default padding
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              50,
+                            ), // Circular button
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.arrow_back,
+                          size: 33,
+                          color: Colors.black, // Customize icon color
+                        ),
+                      ),
+
+                      // Share Button (ElevatedButton)
+                      ElevatedButton(
+                        onPressed: () {
+                          // Add your share functionality here
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                        ),
+                        child: Icon(Icons.share, size: 28, color: Colors.black),
+                      ),
+                    ],
                   ),
                 ),
                 Container(
@@ -262,13 +311,63 @@ class _ProfileState extends State<MyProfile> {
                 Container(
                   margin: EdgeInsets.only(top: 17),
                   width: MediaQuery.of(context).size.width * 0.9,
-                  height: MediaQuery.of(context).size.height * 0.35,
+                  height: MediaQuery.of(context).size.height * 0.34,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      width: 1,
-                      color: const Color.fromARGB(255, 140, 137, 137),
-                    ),
+                  ),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: allRecipes.snapshots(),
+                    builder: (
+                      context,
+                      AsyncSnapshot<QuerySnapshot> recipeSnapshot,
+                    ) {
+                      if (recipeSnapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ${recipeSnapshot.error}'),
+                        );
+                      }
+
+                      if (recipeSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!recipeSnapshot.hasData ||
+                          recipeSnapshot.data!.docs.isEmpty) {
+                        return Center(child: Text('No recipes found.'));
+                      }
+
+                      final List<DocumentSnapshot> recipes =
+                          recipeSnapshot.data!.docs;
+
+                      return Container(
+                        constraints: BoxConstraints(
+                          minHeight: MediaQuery.of(context).size.height,
+                        ),
+                        child: GridView.builder(
+                          padding: EdgeInsets.zero,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.8,
+                                mainAxisSpacing: 20,
+                                crossAxisSpacing: 15,
+                              ),
+                          itemCount: recipes.length,
+                          itemBuilder: (context, index) {
+                            return ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: 250,
+                                minHeight: 200,
+                              ),
+                              child: FoodItemsDisplay(
+                                documentSnapshot: recipes[index],
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

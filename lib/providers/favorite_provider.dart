@@ -1,16 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FavoriteProvider extends ChangeNotifier {
   List<String> _favoriteIds = [];
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<String> get favoriteIds => _favoriteIds;
 
+  late String userId;
+
   Set<String> _loadingIds = {};
 
   FavoriteProvider() {
-    loadFavorite();
+    initializeFavorite();
+  }
+
+  void initializeFavorite() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    userId = prefs.getString('uid')!;
+    await loadFavorite();
   }
 
   bool isLoading(String id) => _loadingIds.contains(id);
@@ -38,30 +47,47 @@ class FavoriteProvider extends ChangeNotifier {
   }
 
   Future<void> addFavorite(String productId) async {
+
     try {
-      await _firestore.collection('UserFavorite').doc(productId).set({
-        "isFavorite": true,
-      });
+      DocumentReference ref = _firestore
+          .collection('UserFavorite')
+          .doc(productId);
+      await ref.set({
+        'favoriteBy': FieldValue.arrayUnion([userId]),
+      }, SetOptions(merge: true));
     } catch (e) {
-      print(e.toString());
+      print('Add Favorite Error: $e');
     }
   }
 
   Future<void> removeFavorite(String productId) async {
     try {
-      await _firestore.collection('UserFavorite').doc(productId).delete();
+      DocumentReference ref = _firestore
+          .collection('UserFavorite')
+          .doc(productId);
+      await ref.set({
+        'favoriteBy': FieldValue.arrayRemove([userId]),
+      }, SetOptions(merge: true));
     } catch (e) {
-      print(e.toString());
+      print('Remove Favorite Error: $e');
     }
   }
 
   Future<void> loadFavorite() async {
     try {
-      QuerySnapshot favSnapshot =
+      QuerySnapshot snapshot =
           await _firestore.collection('UserFavorite').get();
-      _favoriteIds = favSnapshot.docs.map((fav) => fav.id).toList();
+
+      _favoriteIds =
+          snapshot.docs
+              .where((doc) {
+                List? favoriteBy = doc['favoriteBy'];
+                return favoriteBy != null && favoriteBy.contains(userId);
+              })
+              .map((doc) => doc.id)
+              .toList();
     } catch (e) {
-      print(e.toString());
+      print('Load Favorite Error: $e');
     }
     notifyListeners();
   }

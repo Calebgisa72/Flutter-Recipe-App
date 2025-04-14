@@ -1,0 +1,54 @@
+// Future<void> _setupFCM() async {
+//   await FirebaseMessaging.instance.requestPermission();
+
+//   // Foreground handler with debug prints
+//   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+//     debugPrint('\n══════════════════════════════════════════════════');
+//     debugPrint('📢 FOREGROUND NOTIFICATION RECEIVED');
+//     debugPrint('├─ Title: ${message.notification?.title}');
+//     debugPrint('├─ Body: ${message.notification?.body}');
+//     debugPrint('├─ Data: ${message.data}');
+//     debugPrint('├─ App State: $_appLifecycleState');
+
+//     if (_appLifecycleState == AppLifecycleState.resumed) {
+//       final context = navigatorKey.currentContext;
+//       debugPrint('├─ Context Status:');
+//       debugPrint('│  ├─ Exists: ${context != null}');
+//       debugPrint('│  └─ Mounted: ${context?.mounted ?? false}');
+
+//       if (context != null && context.mounted) {
+//         WidgetsBinding.instance.addPostFrameCallback((_) {
+//           if (context.mounted) {
+//             debugPrint('└─ 🚀 DISPLAYING DIALOG');
+//             Provider.of<PushNotificationProvider>(
+//               context,
+//               listen: false,
+//             ).showNotificationDialog(
+//               context: context,
+//               notificationData: message.data,
+//             );
+//           } else {
+//             debugPrint('└─ ❌ CONTEXT DISPOSED BEFORE DIALOG SHOW');
+//           }
+//         });
+//       } else {
+//         debugPrint('└─ ❌ INVALID CONTEXT - DIALOG NOT SHOWN');
+//       }
+//     } else {
+//       debugPrint('└─ 📱 APP NOT IN FOREGROUND - NOTIFICATION IGNORED');
+//     }
+//   });
+
+//   // Background handler (unchanged)
+//   FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+
+//   // Token updates (unchanged)
+//   FirebaseMessaging.instance.onTokenRefresh.listen(_updateTokenInFirestore);
+
+//   // Terminated state handler (unchanged)
+//   RemoteMessage? initialMessage =
+//       await FirebaseMessaging.instance.getInitialMessage();
+//   if (initialMessage != null) {
+//     _handleNotificationClick(initialMessage);
+//   }
+// }

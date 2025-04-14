@@ -137,7 +137,7 @@ class _IngredientsFormState extends State<IngredientsForm> {
                       const Divider(height: 32),
                     ],
                   );
-                }).toList(),
+                }),
                 ElevatedButton.icon(
                   onPressed: addIngredientField,
                   icon: const Icon(Icons.add),

@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:flutter_recipe_app/profilefunctions/profilecountscard.dart';
+import 'package:flutter_recipe_app/providers/favorite_provider.dart';
+import 'package:flutter_recipe_app/providers/notificationpush.dart';
+import 'package:flutter_recipe_app/providers/notification_providers.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Profile extends StatefulWidget {
-  final DocumentSnapshot documentSnapshot;
+  final String userId;
 
-  const Profile({super.key, required this.documentSnapshot});
+  const Profile({super.key, required this.userId});
 
   @override
   _ProfileState createState() => _ProfileState();
@@ -16,97 +21,57 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   String selectedFollowState = 'follow';
-
-  String selectedVar2 = 'receipes';
-  DocumentSnapshot? _connectivityDoc;
-  List<String> favoriteDocIds = ['dummy-id'];
-
-  Future<void> _loadFavorites() async {
-    final ids = await getFavoriteDocumentIds();
-    setState(() => favoriteDocIds = ids.isNotEmpty ? ids : ['dummy-id']);
-    print('Favorites loaded: $favoriteDocIds');
-  }
-
-  Query get allRecipes {
-    final baseQuery = FirebaseFirestore.instance.collection('Recipe-App');
-
-    if (selectedVar2 == 'receipes') {
-      return baseQuery.where('userId', isEqualTo: userData['userId']);
-    } else {
-      return favoriteDocIds.isEmpty
-          ? baseQuery.where('__name__', isEqualTo: 'non-existent-id')
-          : baseQuery.where(FieldPath.documentId, whereIn: favoriteDocIds);
-    }
-  }
-
-  Future<List<String>> getFavoriteDocumentIds() async {
-    final userData = widget.documentSnapshot.data() as Map<String, dynamic>;
-    final navuserId = userData['userId'];
-    if (navuserId == null) return [];
-
-    final snapshot =
-        await FirebaseFirestore.instance
-            .collection('UserFavorite')
-            .where('favoriteBy', arrayContains: navuserId)
-            .get();
-
-    return snapshot.docs.map((doc) => doc.id).toList();
-  }
-
-  int get followersCount =>
-      (_connectivityDoc?['Followedby'] as List?)?.length ?? 0;
-  int get followingCount =>
-      (_connectivityDoc?['Follows'] as List?)?.length ?? 0;
-
-  late Map<String, dynamic> userData;
+  Map<String, dynamic> userData = {
+    'profilePhoto': '',
+    'fullNames': '',
+    'userId': '',
+  };
 
   @override
   void initState() {
     super.initState();
-    _loadUserId();
-    _loadFavorites();
-    userData = widget.documentSnapshot.data() as Map<String, dynamic>;
+    print('Fetching profile for user: ${widget.userId}');
+    _loadUserData();
   }
 
-  String? loggedInUserId;
+  bool isFollowing = false;
+  String selectedVar2 = 'receipes';
 
-  Future<void> _loadUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      loggedInUserId = prefs.getString('uid');
-    });
+  Stream<List<DocumentSnapshot>> get allRecipes {
+    final favProvider = FavoriteProvider.of(context);
+    final favoriteItems = favProvider.favoriteIds;
+    if (selectedVar2 == 'receipes') {
+      return FirebaseFirestore.instance
+          .collection('Recipe-App')
+          .where('userId', isEqualTo: widget.userId)
+          .snapshots()
+          .map((snap) => snap.docs);
+    } else {
+      return FirebaseFirestore.instance
+          .collection('Recipe-App')
+          .where(FieldPath.documentId, whereIn: favoriteItems)
+          .snapshots()
+          .map((snap) => snap.docs);
+    }
   }
 
-  Future<void> followUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final loggedInUserId = prefs.getString('uid');
-    if (loggedInUserId == null) return;
+  Future<void> _loadUserData() async {
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(widget.userId)
+              .get();
 
-    final userData = widget.documentSnapshot.data() as Map<String, dynamic>;
-    final targetUserId = userData['userId'];
-
-    await FirebaseFirestore.instance
-        .collection('Connectivity')
-        .doc(targetUserId)
-        .update({
-          'Followedby': FieldValue.arrayUnion([loggedInUserId]),
+      if (doc.exists) {
+        setState(() {
+          userData = doc.data()!;
+          userData['userId'] = widget.userId;
         });
-  }
-
-  Future<void> unfollowUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final loggedInUserId = prefs.getString('uid');
-    if (loggedInUserId == null) return;
-
-    final userData = widget.documentSnapshot.data() as Map<String, dynamic>;
-    final targetUserId = userData['userId'];
-
-    await FirebaseFirestore.instance
-        .collection('Connectivity')
-        .doc(targetUserId)
-        .update({
-          'Followedby': FieldValue.arrayRemove([loggedInUserId]),
-        });
+      } else {}
+    } catch (e) {
+      print('$e');
+    }
   }
 
   @override
@@ -117,7 +82,6 @@ class _ProfileState extends State<Profile> {
         child: Container(
           width: MediaQuery.of(context).size.width * 1,
           height: MediaQuery.of(context).size.height * 1,
-          color: bgColor,
 
           child: Container(
             margin: EdgeInsets.only(top: 18),
@@ -128,9 +92,7 @@ class _ProfileState extends State<Profile> {
                 SizedBox(height: 30),
                 Container(
                   width: MediaQuery.of(context).size.width * 0.94,
-
                   height: MediaQuery.of(context).size.height * 0.065,
-
                   alignment: Alignment.centerRight,
                   padding: EdgeInsets.all(3),
                   child: Row(
@@ -145,16 +107,12 @@ class _ProfileState extends State<Profile> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                         ),
-
                         child: IconButton(
                           padding: EdgeInsets.zero,
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
+                          onPressed: () => Navigator.pop(context),
                           icon: Icon(Icons.chevron_left, size: 28),
                         ),
                       ),
-
                       Container(
                         width: 40,
                         decoration: BoxDecoration(
@@ -162,7 +120,6 @@ class _ProfileState extends State<Profile> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         height: double.infinity,
-
                         child: Center(
                           child: IconButton(
                             onPressed: () => {},
@@ -173,7 +130,6 @@ class _ProfileState extends State<Profile> {
                     ],
                   ),
                 ),
-
                 Column(
                   children: [
                     Container(
@@ -181,32 +137,28 @@ class _ProfileState extends State<Profile> {
                       height: 130,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-
                         image: DecorationImage(
-                          image: NetworkImage(
-                            userData['profilePhoto'] as String,
-                          ),
+                          image: NetworkImage(userData['profilePhoto']),
                           fit: BoxFit.cover,
                         ),
                       ),
                     ),
                     SizedBox(height: 10),
                     Text(
-                      userData['fullNames'] as String,
+                      userData['fullNames'],
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     SizedBox(height: 10),
-
                     StreamBuilder<QuerySnapshot>(
                       stream:
                           FirebaseFirestore.instance
                               .collection('Connectivity')
                               .where(
                                 FieldPath.documentId,
-                                isEqualTo: userData['userId'],
+                                isEqualTo: widget.userId,
                               )
                               .snapshots(),
                       builder: (context, snapshot) {
@@ -220,12 +172,24 @@ class _ProfileState extends State<Profile> {
                           stream:
                               FirebaseFirestore.instance
                                   .collection('Recipe-App')
-                                  .where(
-                                    'userId',
-                                    isEqualTo: userData['userId'],
-                                  )
+                                  .where('userId', isEqualTo: widget.userId)
                                   .snapshots(),
                           builder: (context, recipeSnapshot) {
+                            if (recipeSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              print('Loading recipes...');
+                            }
+                            if (recipeSnapshot.hasError) {
+                              print(
+                                'Error fetching recipes: ${recipeSnapshot.error}',
+                              );
+                            }
+                            if (recipeSnapshot.hasData) {
+                              print(
+                                'Found ${recipeSnapshot.data!.docs.length} recipes',
+                              );
+                            }
+
                             final recipesCount =
                                 recipeSnapshot.hasData
                                     ? recipeSnapshot.data!.docs.length
@@ -234,14 +198,22 @@ class _ProfileState extends State<Profile> {
                             return Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _buildCountTile('Recipes', recipesCount),
-                                _buildCountTile(
-                                  'Followers',
-                                  (counts?['Followedby'] as List?)?.length ?? 0,
+                                CountTile(
+                                  label: 'Recipes',
+                                  count: recipesCount,
                                 ),
-                                _buildCountTile(
-                                  'Following',
-                                  (counts?['Follows'] as List?)?.length ?? 0,
+                                CountTile(
+                                  label: 'Followers',
+                                  count:
+                                      (counts?['Followedby'] as List?)
+                                          ?.length ??
+                                      0,
+                                ),
+                                CountTile(
+                                  label: 'Following',
+                                  count:
+                                      (counts?['Follows'] as List?)?.length ??
+                                      0,
                                 ),
                               ],
                             );
@@ -252,8 +224,7 @@ class _ProfileState extends State<Profile> {
                   ],
                 ),
                 SizedBox(height: 10),
-
-                Container(
+                SizedBox(
                   width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.height * 0.08,
 
@@ -261,57 +232,91 @@ class _ProfileState extends State<Profile> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      StreamBuilder<DocumentSnapshot>(
-                        stream:
-                            FirebaseFirestore.instance
-                                .collection('Connectivity')
-                                .doc(userData['userId'])
-                                .snapshots(),
-                        builder: (context, snapshot) {
-                          final isFollowing =
-                              snapshot.hasData
-                                  ? (snapshot.data!['Followedby'] as List?)
-                                          ?.contains(loggedInUserId) ??
-                                      false
-                                  : false;
+                      FutureBuilder(
+                        future: SharedPreferences.getInstance(),
+                        builder: (context, prefsSnapshot) {
+                          final currentuserId = prefsSnapshot.data?.getString(
+                            'uid',
+                          );
+                          return StreamBuilder(
+                            stream:
+                                currentuserId != null
+                                    ? FirebaseFirestore.instance
+                                        .collection('Connectivity')
+                                        .doc(widget.userId)
+                                        .snapshots()
+                                    : Stream.empty(),
+                            builder: (context, snapshot) {
+                              final isFollowing =
+                                  (snapshot.data?['Followedby'] as List?)
+                                      ?.contains(currentuserId) ??
+                                  false;
 
-                          return ElevatedButton(
-                            onPressed: () async {
-                              if (isFollowing) {
-                                await unfollowUser();
-                              } else {
-                                await followUser();
-                              }
+                              return ElevatedButton(
+                                onPressed: () async {
+                                  if (isFollowing) {
+                                    final notificationProvider =
+                                        Provider.of<NotificationProvider>(
+                                          context,
+                                          listen: false,
+                                        );
+                                    notificationProvider.unfollowUser(
+                                      widget.userId,
+                                    );
+                                  } else {
+                                    final notificationProvider =
+                                        Provider.of<NotificationProvider>(
+                                          context,
+                                          listen: false,
+                                        );
+                                    notificationProvider.followUser(
+                                      widget.userId,
+                                      context,
+                                    );
+                                  }
+                                },
+
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      isFollowing
+                                          ? const Color.fromARGB(
+                                            255,
+                                            102,
+                                            114,
+                                            100,
+                                          )
+                                          : primaryColor,
+                                  shadowColor: const Color.fromARGB(
+                                    0,
+                                    174,
+                                    10,
+                                    10,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      bRadius,
+                                    ),
+                                  ),
+                                  minimumSize: Size(
+                                    MediaQuery.of(context).size.width * 0.37,
+                                    MediaQuery.of(context).size.height * 0.07,
+                                  ),
+                                ),
+                                child: Text(
+                                  isFollowing ? 'Unfollow' : 'Follow',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
                             },
-
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  isFollowing
-                                      ? const Color.fromARGB(255, 102, 114, 100)
-                                      : primaryColor,
-                              shadowColor: const Color.fromARGB(0, 174, 10, 10),
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(bRadius),
-                              ),
-                              minimumSize: Size(
-                                MediaQuery.of(context).size.width * 0.37,
-                                MediaQuery.of(context).size.height * 0.07,
-                              ),
-                            ),
-                            child: Text(
-                              isFollowing ? 'Unfollow' : 'Follow',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                           );
                         },
                       ),
                       SizedBox(width: 12),
-
                       ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
@@ -323,7 +328,6 @@ class _ProfileState extends State<Profile> {
                           ),
                           shadowColor: const Color.fromARGB(0, 174, 10, 10),
                           padding: EdgeInsets.zero,
-
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(bRadius),
                           ),
@@ -435,40 +439,33 @@ class _ProfileState extends State<Profile> {
                     ],
                   ),
                 ),
-                Container(
+                SizedBox(
                   width: MediaQuery.of(context).size.width * 0.94,
-                  height: MediaQuery.of(context).size.height * 0.414,
+                  height: MediaQuery.of(context).size.height * 0.41,
 
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: allRecipes.snapshots(),
+                  child: StreamBuilder<List<DocumentSnapshot>>(
+                    stream: allRecipes,
                     builder: (
                       context,
-                      AsyncSnapshot<QuerySnapshot> recipeSnapshot,
+                      AsyncSnapshot<List<DocumentSnapshot>> snapshot,
                     ) {
-                      if (recipeSnapshot.hasError) {
-                        return Center(
-                          child: Text('Error: ${recipeSnapshot.error}'),
-                        );
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
                       }
 
-                      if (recipeSnapshot.connectionState ==
-                          ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
                       }
 
-                      if (!recipeSnapshot.hasData ||
-                          recipeSnapshot.data!.docs.isEmpty) {
+                      final recipes = snapshot.data ?? [];
+                      if (recipes.isEmpty) {
                         return Center(child: Text('No recipes found.'));
                       }
 
-                      final List<DocumentSnapshot> recipes =
-                          recipeSnapshot.data!.docs;
-
-                      return Container(
+                      return SizedBox(
                         width: double.infinity,
-
                         child: GridView.builder(
-                          padding: EdgeInsets.symmetric(vertical: 20),
+                          padding: EdgeInsets.symmetric(vertical: 8),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
@@ -494,18 +491,4 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
-
-  Widget _buildCountTile(String label, int count) => SizedBox(
-    width: MediaQuery.of(context).size.width * 0.17,
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          count.toString(),
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19),
-        ),
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.black)),
-      ],
-    ),
-  );
 }

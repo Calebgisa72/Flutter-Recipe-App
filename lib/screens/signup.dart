@@ -498,12 +498,7 @@ class _SignupState extends State<Signup> {
                     ),
                     SizedBox(width: 6),
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => MyProfile()),
-                        );
-                      },
+                      onPressed: () {},
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(
                           horizontal: 0,

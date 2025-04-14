@@ -151,7 +151,10 @@ class FavoriteScreen extends StatelessWidget {
                             right: 15,
                             child: GestureDetector(
                               onTap: () {
-                                favProvider.toggleFavorite(favoriteItem);
+                                favProvider.toggleFavorite(
+                                  favoriteItem,
+                                  context,
+                                );
                               },
                               child: CircleAvatar(
                                 backgroundColor: Colors.white,

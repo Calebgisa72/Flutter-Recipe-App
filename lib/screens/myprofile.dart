@@ -1,44 +1,67 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_recipe_app/screens/login.dart';
+import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:flutter_recipe_app/notifications/recordnotification.dart';
+import 'package:flutter_recipe_app/profilefunctions/profilecountscard.dart';
+import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 
-import 'package:flutter_recipe_app/screens/recipe_upload_flow.dart';
+import 'package:flutter_recipe_app/screens/login.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MyProfile extends StatefulWidget {
+  final String userId;
+
+  const MyProfile({super.key, required this.userId});
+
   @override
   _MyProfileState createState() => _MyProfileState();
 }
 
 class _MyProfileState extends State<MyProfile> {
   String selectedFollowState = 'follow';
+  Map<String, dynamic> userData = {
+    'profilePhoto': '',
+    'fullNames': '',
+    'userId': '',
+  };
 
-  String? currentUserId;
+  @override
+  void initState() {
+    super.initState();
+    print('Fetching profile for user: ${widget.userId}');
+    _loadUserData();
+  }
 
-  List<Map<String, dynamic>> userdata = [];
-
+  bool isFollowing = false;
   String selectedVar2 = 'receipes';
-  DocumentSnapshot? _connectivityDoc;
-  List<String> favoriteDocIds = ['dummy-id'];
 
-  Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      currentUserId = prefs.getString('uid');
-    });
+  Stream<List<DocumentSnapshot>> get allRecipes {
+    final favProvider = FavoriteProvider.of(context);
+    final favoriteItems = favProvider.favoriteIds;
+    if (selectedVar2 == 'receipes') {
+      return FirebaseFirestore.instance
+          .collection('Recipe-App')
+          .where('userId', isEqualTo: widget.userId)
+          .snapshots()
+          .map((snap) => snap.docs);
+    } else {
+      return FirebaseFirestore.instance
+          .collection('Recipe-App')
+          .where(FieldPath.documentId, whereIn: favoriteItems)
+          .snapshots()
+          .map((snap) => snap.docs);
+    }
   }
 
   bool isLoggingOut = false;
-  String? logoutErrorMessage;
 
   void handleLogout() async {
     setState(() {
       isLoggingOut = true;
-      logoutErrorMessage = null;
     });
 
     try {
@@ -53,15 +76,9 @@ class _MyProfileState extends State<MyProfile> {
         (route) => false,
       );
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        logoutErrorMessage = 'Logout failed: ${e.message}';
-      });
-      print('Firebase logout error: $e');
+      setState(() {});
     } catch (e) {
-      setState(() {
-        logoutErrorMessage = 'An unexpected error occurred';
-      });
-      print('Logout error: $e');
+      setState(() {});
     } finally {
       if (mounted) {
         setState(() {
@@ -71,59 +88,23 @@ class _MyProfileState extends State<MyProfile> {
     }
   }
 
-  Future<void> _loadFavorites() async {
-    final ids = await getFavoriteDocumentIds();
-    setState(() => favoriteDocIds = ids.isNotEmpty ? ids : ['dummy-id']);
-  }
+  Future<void> _loadUserData() async {
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(widget.userId)
+              .get();
 
-  Query get allRecipes {
-    final baseQuery = FirebaseFirestore.instance.collection('Recipe-App');
-
-    if (selectedVar2 == 'receipes') {
-      return baseQuery.where('userId', isEqualTo: currentUserId);
-    } else {
-      return favoriteDocIds.isEmpty
-          ? baseQuery.where('__name__', isEqualTo: 'non-existent-id')
-          : baseQuery.where(FieldPath.documentId, whereIn: favoriteDocIds);
-    }
-  }
-
-  Future<List<String>> getFavoriteDocumentIds() async {
-    final snapshot =
-        await FirebaseFirestore.instance
-            .collection('UserFavorite')
-            .where('favoriteBy', arrayContains: currentUserId)
-            .get();
-
-    return snapshot.docs.map((doc) => doc.id).toList();
-  }
-
-  int get followersCount =>
-      (_connectivityDoc?['Followedby'] as List?)?.length ?? 0;
-  int get followingCount =>
-      (_connectivityDoc?['Follows'] as List?)?.length ?? 0;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _loadFavorites();
-    _loadUserData();
-  }
-
-  Future<void> followUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final loggedInUserId = prefs.getString('uid');
-    if (loggedInUserId == null) return;
-
-    final targetUserId = currentUserId;
-
-    await FirebaseFirestore.instance
-        .collection('Connectivity')
-        .doc(targetUserId)
-        .update({
-          'Followedby': FieldValue.arrayUnion([loggedInUserId]),
+      if (doc.exists) {
+        setState(() {
+          userData = doc.data()!;
+          userData['userId'] = widget.userId;
         });
+      } else {}
+    } catch (e) {
+      print('$e');
+    }
   }
 
   @override
@@ -133,153 +114,150 @@ class _MyProfileState extends State<MyProfile> {
       body: SingleChildScrollView(
         child: Container(
           width: MediaQuery.of(context).size.width * 1,
-          height: MediaQuery.of(context).size.height * 0.97,
-          color: bgColor,
+          height: MediaQuery.of(context).size.height * 1,
+          decoration: BoxDecoration(color: bgColor),
           child: Container(
-            margin: EdgeInsets.only(top: 20),
+            margin: EdgeInsets.only(top: 18),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: 30),
-
                 Container(
                   width: MediaQuery.of(context).size.width * 0.94,
-
                   height: MediaQuery.of(context).size.height * 0.065,
-
                   alignment: Alignment.centerRight,
                   padding: EdgeInsets.all(3),
-                  child: Container(
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    height: double.infinity,
-
-                    child: Center(
-                      child: IconButton(
-                        onPressed: () => {},
-                        icon: Icon(Iconsax.notification, size: 25),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: double.infinity,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(Icons.chevron_left, size: 28),
+                        ),
                       ),
-                    ),
+                      Container(
+                        width: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        height: double.infinity,
+                        child: Center(
+                          child: IconButton(
+                            onPressed: () => {},
+                            icon: Icon(Iconsax.notification, size: 25),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                StreamBuilder<QuerySnapshot>(
-                  stream:
-                      FirebaseFirestore.instance
-                          .collection('Users')
-                          .where('userId', isEqualTo: currentUserId)
-                          .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    }
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
-                    }
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Text('No user found');
-                    }
-
-                    final userData =
-                        snapshot.data!.docs.first.data()
-                            as Map<String, dynamic>;
-
-                    return Container(
-                      width: MediaQuery.of(context).size.width * 0.94,
-                      height: MediaQuery.of(context).size.height * 0.32,
-                      decoration: BoxDecoration(),
-
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 130,
-                            height: 130,
-
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-
-                              image: DecorationImage(
-                                image: NetworkImage(
-                                  userData['profilePhoto'] as String,
-                                ),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            userData['fullNames'] as String,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-
-                          StreamBuilder<QuerySnapshot>(
-                            stream:
-                                FirebaseFirestore.instance
-                                    .collection('Connectivity')
-                                    .where(
-                                      FieldPath.documentId,
-                                      isEqualTo: userData['userId'],
-                                    )
-                                    .snapshots(),
-                            builder: (context, snapshot) {
-                              final counts =
-                                  snapshot.hasData &&
-                                          snapshot.data!.docs.isNotEmpty
-                                      ? snapshot.data!.docs.first.data()
-                                          as Map<String, dynamic>
-                                      : null;
-
-                              return StreamBuilder<QuerySnapshot>(
-                                stream:
-                                    FirebaseFirestore.instance
-                                        .collection('Recipe-App')
-                                        .where(
-                                          'userId',
-                                          isEqualTo: userData['userId'],
-                                        )
-                                        .snapshots(),
-                                builder: (context, recipeSnapshot) {
-                                  final recipesCount =
-                                      recipeSnapshot.hasData
-                                          ? recipeSnapshot.data!.docs.length
-                                          : 0;
-
-                                  return Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      _buildCountTile('Recipes', recipesCount),
-                                      _buildCountTile(
-                                        'Followers',
-                                        (counts?['Followedby'] as List?)
-                                                ?.length ??
-                                            0,
-                                      ),
-                                      _buildCountTile(
-                                        'Following',
-                                        (counts?['Follows'] as List?)?.length ??
-                                            0,
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ],
+                Column(
+                  children: [
+                    Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        image: DecorationImage(
+                          image: NetworkImage(userData['profilePhoto']),
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      userData['fullNames'],
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    StreamBuilder<QuerySnapshot>(
+                      stream:
+                          FirebaseFirestore.instance
+                              .collection('Connectivity')
+                              .where(
+                                FieldPath.documentId,
+                                isEqualTo: widget.userId,
+                              )
+                              .snapshots(),
+                      builder: (context, snapshot) {
+                        final counts =
+                            snapshot.hasData && snapshot.data!.docs.isNotEmpty
+                                ? snapshot.data!.docs.first.data()
+                                    as Map<String, dynamic>
+                                : null;
 
-                Container(
+                        return StreamBuilder<QuerySnapshot>(
+                          stream:
+                              FirebaseFirestore.instance
+                                  .collection('Recipe-App')
+                                  .where('userId', isEqualTo: widget.userId)
+                                  .snapshots(),
+                          builder: (context, recipeSnapshot) {
+                            if (recipeSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              print('Loading recipes...');
+                            }
+                            if (recipeSnapshot.hasError) {
+                              print(
+                                'Error fetching recipes: ${recipeSnapshot.error}',
+                              );
+                            }
+                            if (recipeSnapshot.hasData) {
+                              print(
+                                'Found ${recipeSnapshot.data!.docs.length} recipes',
+                              );
+                            }
+
+                            final recipesCount =
+                                recipeSnapshot.hasData
+                                    ? recipeSnapshot.data!.docs.length
+                                    : 0;
+
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                CountTile(
+                                  label: 'Recipes',
+                                  count: recipesCount,
+                                ),
+                                CountTile(
+                                  label: 'Followers',
+                                  count:
+                                      (counts?['Followedby'] as List?)
+                                          ?.length ??
+                                      0,
+                                ),
+                                CountTile(
+                                  label: 'Following',
+                                  count:
+                                      (counts?['Follows'] as List?)?.length ??
+                                      0,
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                SizedBox(
                   width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.height * 0.08,
 
@@ -288,7 +266,14 @@ class _MyProfileState extends State<MyProfile> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          await recordFollowNotification(
+                            targetUserId: widget.userId,
+                            senderId: '4bkOqq3I3Ka4PunDgzrdkArJ8On2',
+
+                            context: context,
+                          );
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color.fromARGB(
                             255,
@@ -349,9 +334,9 @@ class _MyProfileState extends State<MyProfile> {
                     ],
                   ),
                 ),
-
                 Container(
-                  margin: EdgeInsets.only(top: 4),
+                  margin: EdgeInsets.only(top: 8),
+
                   width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.width * 0.1,
 
@@ -381,13 +366,11 @@ class _MyProfileState extends State<MyProfile> {
                         child: ElevatedButton(
                           onPressed:
                               () => setState(() => selectedVar2 = 'receipes'),
-
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
                             splashFactory: NoSplash.splashFactory,
-
                             surfaceTintColor: Colors.transparent,
                             padding: EdgeInsets.zero,
                           ),
@@ -395,7 +378,6 @@ class _MyProfileState extends State<MyProfile> {
                             'Receipes',
                             style: TextStyle(
                               fontSize: 17,
-
                               color: Colors.black,
                               fontWeight:
                                   selectedVar2 == 'receipes'
@@ -450,120 +432,44 @@ class _MyProfileState extends State<MyProfile> {
                     ],
                   ),
                 ),
-                Container(
+                SizedBox(
                   width: MediaQuery.of(context).size.width * 0.94,
-                  height: MediaQuery.of(context).size.height * 0.33,
-                  decoration: BoxDecoration(),
+                  height: MediaQuery.of(context).size.height * 0.36,
 
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: allRecipes.snapshots(),
+                  child: StreamBuilder<List<DocumentSnapshot>>(
+                    stream: allRecipes,
                     builder: (
                       context,
-                      AsyncSnapshot<QuerySnapshot> recipeSnapshot,
+                      AsyncSnapshot<List<DocumentSnapshot>> snapshot,
                     ) {
-                      if (recipeSnapshot.hasError) {
-                        return Center(
-                          child: Text('Error: ${recipeSnapshot.error}'),
-                        );
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
                       }
 
-                      if (recipeSnapshot.connectionState ==
-                          ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
                       }
 
-                      if (!recipeSnapshot.hasData ||
-                          recipeSnapshot.data!.docs.isEmpty) {
+                      final recipes = snapshot.data ?? [];
+                      if (recipes.isEmpty) {
                         return Center(child: Text('No recipes found.'));
                       }
 
-                      final List<DocumentSnapshot> recipes =
-                          recipeSnapshot.data!.docs;
-
                       return SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.9,
-
                         width: double.infinity,
-
                         child: GridView.builder(
+                          padding: EdgeInsets.symmetric(vertical: 8),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 mainAxisSpacing: 0,
                                 crossAxisSpacing: 15,
-                                childAspectRatio:
-                                    selectedVar2 == 'receipes' ? 0.63 : 0.68,
+                                childAspectRatio: 0.78,
                               ),
                           itemCount: recipes.length,
-                          padding: EdgeInsets.all(0),
                           itemBuilder: (context, index) {
-                            return SizedBox(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  FoodItemsDisplay(
-                                    documentSnapshot: recipes[index],
-                                  ),
-                                  Container(
-                                    width: 70,
-                                    height:
-                                        MediaQuery.of(context).size.height *
-                                        0.04,
-                                    decoration: BoxDecoration(),
-                                    child:
-                                        selectedVar2 == 'receipes'
-                                            ? Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                InkWell(
-                                                  onTap: () {},
-                                                  splashColor: Colors.red
-                                                      .withOpacity(0.2),
-                                                  child: Icon(
-                                                    Icons.delete,
-                                                    color: Colors.red,
-                                                    size: 25,
-                                                  ),
-                                                ),
-
-                                                InkWell(
-                                                  onTap: () {
-                                                    print(
-                                                      'button tapped on edit',
-                                                    );
-                                                    Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder:
-                                                            (
-                                                              context,
-                                                            ) => RecipeFormFlow(
-                                                              edit: true,
-                                                              documentSnapshot:
-                                                                  recipes[index],
-                                                            ),
-                                                      ),
-                                                    );
-                                                  },
-                                                  splashColor: Colors.red
-                                                      .withOpacity(0.2),
-                                                  child: Icon(
-                                                    Icons.edit,
-                                                    color: Colors.black,
-                                                    size: 25,
-                                                  ),
-                                                ),
-                                              ],
-                                            )
-                                            : Container(),
-                                  ),
-                                ],
-                              ),
+                            return FoodItemsDisplay(
+                              documentSnapshot: recipes[index],
                             );
                           },
                         ),
@@ -578,18 +484,4 @@ class _MyProfileState extends State<MyProfile> {
       ),
     );
   }
-
-  Widget _buildCountTile(String label, int count) => SizedBox(
-    width: MediaQuery.of(context).size.width * 0.17,
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          count.toString(),
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19),
-        ),
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.black)),
-      ],
-    ),
-  );
 }

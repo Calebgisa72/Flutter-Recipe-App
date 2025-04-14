@@ -86,7 +86,7 @@ class FoodItemsDisplay extends StatelessWidget {
                 radius: 18,
                 child: InkWell(
                   onTap: () {
-                    favProvider.toggleFavorite(documentSnapshot);
+                    favProvider.toggleFavorite(documentSnapshot, context);
                   },
                   child:
                       favProvider.isLoading(documentSnapshot.id)

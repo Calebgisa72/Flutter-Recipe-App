@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_recipe_app/notifications/recordnotification.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,7 +11,7 @@ class FavoriteProvider extends ChangeNotifier {
 
   late String userId;
 
-  Set<String> _loadingIds = {};
+  final Set<String> _loadingIds = {};
 
   FavoriteProvider() {
     initializeFavorite();
@@ -24,7 +25,7 @@ class FavoriteProvider extends ChangeNotifier {
 
   bool isLoading(String id) => _loadingIds.contains(id);
 
-  void toggleFavorite(DocumentSnapshot product) async {
+  void toggleFavorite(DocumentSnapshot product, BuildContext context) async {
     String productId = product.id;
 
     _loadingIds.add(productId);
@@ -35,7 +36,7 @@ class FavoriteProvider extends ChangeNotifier {
       await removeFavorite(productId);
     } else {
       _favoriteIds.add(productId);
-      await addFavorite(productId);
+      await addFavorite(productId, product, context);
     }
 
     _loadingIds.remove(productId);
@@ -46,17 +47,24 @@ class FavoriteProvider extends ChangeNotifier {
     return _favoriteIds.contains(product.id);
   }
 
-  Future<void> addFavorite(String productId) async {
-
+  Future<void> addFavorite(
+    String productId,
+    DocumentSnapshot product,
+    BuildContext context,
+  ) async {
     try {
-      DocumentReference ref = _firestore
-          .collection('UserFavorite')
-          .doc(productId);
-      await ref.set({
+      await _firestore.collection('UserFavorite').doc(productId).set({
         'favoriteBy': FieldValue.arrayUnion([userId]),
       }, SetOptions(merge: true));
+
+      await recordLikedNotification(
+        targetUserId: product['userId'],
+        senderId: userId,
+        recipeId: productId,
+        context: context,
+      );
     } catch (e) {
-      print('Add Favorite Error: $e');
+      print('Error: $e');
     }
   }
 

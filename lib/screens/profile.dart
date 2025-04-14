@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:flutter_recipe_app/notifications/notificationcount.dart';
 import 'package:flutter_recipe_app/profilefunctions/profilecountscard.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/providers/notification_providers.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
-import 'package:iconsax/iconsax.dart';
+
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,7 +39,7 @@ class _ProfileState extends State<Profile> {
 
   Stream<List<DocumentSnapshot>> get allRecipes {
     final favProvider = FavoriteProvider.of(context);
-    final favoriteItems = favProvider.favoriteIds;
+
     if (selectedVar2 == 'receipes') {
       return FirebaseFirestore.instance
           .collection('Recipe-App')
@@ -46,11 +47,20 @@ class _ProfileState extends State<Profile> {
           .snapshots()
           .map((snap) => snap.docs);
     } else {
+      final favoriteItems = favProvider.otherUserFavoriteIds;
       return FirebaseFirestore.instance
           .collection('Recipe-App')
-          .where(FieldPath.documentId, whereIn: favoriteItems)
+          .where(
+            FieldPath.documentId,
+            whereIn: favoriteItems.isNotEmpty ? favoriteItems : [''],
+          )
           .snapshots()
-          .map((snap) => snap.docs);
+          .map(
+            (snap) =>
+                snap.docs
+                    .where((doc) => favoriteItems.contains(doc.id))
+                    .toList(),
+          );
     }
   }
 
@@ -119,12 +129,7 @@ class _ProfileState extends State<Profile> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         height: double.infinity,
-                        child: Center(
-                          child: IconButton(
-                            onPressed: () => {},
-                            icon: Icon(Iconsax.notification, size: 25),
-                          ),
-                        ),
+                        child: Center(child: NotificationIconWithBadge()),
                       ),
                     ],
                   ),
@@ -443,6 +448,7 @@ class _ProfileState extends State<Profile> {
                           itemBuilder: (context, index) {
                             return FoodItemsDisplay(
                               documentSnapshot: recipes[index],
+                              isOnAnotherUserPage: true,
                             );
                           },
                         ),

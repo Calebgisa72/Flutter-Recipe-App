@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
+import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -13,9 +14,11 @@ class ViewAllRecipes extends StatefulWidget {
 }
 
 class _ViewAllRecipesState extends State<ViewAllRecipes> {
-  final CollectionReference recipes = FirebaseFirestore.instance.collection(
-    'Recipe-App',
-  );
+  String get currentUserId => AppMainProvider.of(context, listen: false).userId;
+
+  Query get recipes => FirebaseFirestore.instance
+      .collection('Recipe-App')
+      .where('userId', isNotEqualTo: currentUserId);
 
   @override
   Widget build(BuildContext context) {

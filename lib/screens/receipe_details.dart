@@ -14,6 +14,8 @@ class Details extends StatefulWidget {
 }
 
 class _DetailState extends State<Details> {
+  final CollectionReference recipeFavorites = FirebaseFirestore.instance
+      .collection('UserFavorite');
   @override
   Widget build(BuildContext context) {
     final favProvider = FavoriteProvider.of(context);
@@ -76,7 +78,10 @@ class _DetailState extends State<Details> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  widget.documentSnapshot["category"],
+                                  widget.documentSnapshot["category"][0]
+                                          .toUpperCase() +
+                                      widget.documentSnapshot["category"]
+                                          .substring(1),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w400,
                                     fontSize: 16,
@@ -109,7 +114,7 @@ class _DetailState extends State<Details> {
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
-                                  widget.documentSnapshot['time'],
+                                  "${widget.documentSnapshot['time']} Mins",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
@@ -198,9 +203,35 @@ class _DetailState extends State<Details> {
                                               size: 24,
                                             ),
                                   ),
-                                  const Text(
-                                    '773 Favs',
-                                    style: TextStyle(fontSize: 16),
+                                  StreamBuilder<DocumentSnapshot>(
+                                    stream:
+                                        recipeFavorites
+                                            .doc(widget.documentSnapshot.id)
+                                            .snapshots(),
+                                    builder: (context, snapshot) {
+                                      if (!snapshot.hasData ||
+                                          !snapshot.data!.exists) {
+                                        return const Text(
+                                          '0 Favs',
+                                          style: TextStyle(fontSize: 16),
+                                        );
+                                      }
+
+                                      final favoriteData =
+                                          snapshot.data!.data()
+                                              as Map<String, dynamic>;
+                                      final favoriteCount =
+                                          favoriteData['favoriteBy'] != null
+                                              ? (favoriteData['favoriteBy']
+                                                      as List)
+                                                  .length
+                                              : 0;
+
+                                      return Text(
+                                        '$favoriteCount ${favoriteCount == 1 ? 'Fav' : 'Favs'}',
+                                        style: const TextStyle(fontSize: 16),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
@@ -228,7 +259,7 @@ class _DetailState extends State<Details> {
 
                       const SizedBox(height: 8),
                       Text(
-                        'Your recipe has been uploaded, you can see it on your profile. Your recipe has been uploaded, you can see it on your profile.',
+                        widget.documentSnapshot['description'],
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 17,
@@ -307,7 +338,7 @@ class _DetailState extends State<Details> {
             Expanded(
               child: Text(
                 ingredient['name'],
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
               ),
             ),
             SizedBox(width: 10),

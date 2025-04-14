@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/screens/favorite_screen.dart';
 import 'package:flutter_recipe_app/screens/home_screen.dart';
 import 'package:flutter_recipe_app/screens/myprofile.dart';
+import 'package:flutter_recipe_app/screens/recipe_upload_flow.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -13,21 +15,21 @@ class AppMainScreen extends StatefulWidget {
 }
 
 class _AppMainScreenState extends State<AppMainScreen> {
-  int selectedIndex = 0;
   late final List<Widget> pages;
   @override
   void initState() {
     pages = [
       HomeScreen(),
       FavoriteScreen(),
+      RecipeFormFlow(edit: false),
       MyProfile(),
-      navBarPage(Iconsax.setting_21),
     ];
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    final tabProvider = AppMainProvider.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: BottomNavigationBar(
@@ -35,11 +37,9 @@ class _AppMainScreenState extends State<AppMainScreen> {
         iconSize: 28,
         selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,
-        currentIndex: selectedIndex,
-        onTap: (value) {
-          setState(() {
-            selectedIndex = value;
-          });
+        currentIndex: tabProvider.selectedTab,
+        onTap: (index) {
+          tabProvider.setSelectedTab(index);
         },
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
@@ -49,32 +49,28 @@ class _AppMainScreenState extends State<AppMainScreen> {
         ),
         items: [
           BottomNavigationBarItem(
-            icon: Icon(selectedIndex == 0 ? Iconsax.home5 : Iconsax.home),
+            icon: Icon(tabProvider.selectedTab == 0 ? Iconsax.home5 : Iconsax.home),
             label: "Home",
           ),
           BottomNavigationBarItem(
-            icon: Icon(selectedIndex == 1 ? Iconsax.heart5 : Iconsax.heart),
+            icon: Icon(tabProvider.selectedTab == 1 ? Iconsax.heart5 : Iconsax.heart),
             label: "Favorite",
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              selectedIndex == 2 ? Iconsax.calendar5 : Iconsax.calendar,
+              tabProvider.selectedTab == 2
+                  ? Iconsax.document_upload5
+                  : Iconsax.document_upload,
             ),
-            label: "Profile",
+            label: "Upload",
           ),
           BottomNavigationBarItem(
-            icon: Icon(
-              selectedIndex == 3 ? Iconsax.setting_21 : Iconsax.setting,
-            ),
-            label: "Settings",
+            icon: Icon(tabProvider.selectedTab == 3 ? Iconsax.user4 : Iconsax.user),
+            label: "Profile",
           ),
         ],
       ),
-      body: pages[selectedIndex],
+      body: pages[tabProvider.selectedTab],
     );
-  }
-
-  navBarPage(iconName) {
-    return Center(child: Icon(iconName, size: 100, color: primaryColor));
   }
 }

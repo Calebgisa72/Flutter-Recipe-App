@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:flutter_recipe_app/screens/login.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Entrypage extends StatefulWidget {
@@ -14,12 +16,22 @@ class Entrypage extends StatefulWidget {
 
 class _EntrypageState extends State<Entrypage> {
   bool isLoading = false;
+  late AppMainProvider provider;
+
+  @override
+  void initState() {
+    super.initState();
+    initAsync();
+  }
+
+  Future<void> initAsync() async {
+    provider = Provider.of<AppMainProvider>(context, listen: false);
+    await provider.loadUserId();
+  }
 
   void checkLoginStatus() async {
     setState(() => isLoading = true);
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? uid = prefs.getString('uid');
     var user = FirebaseAuth.instance.currentUser;
 
     await user?.reload();
@@ -27,12 +39,14 @@ class _EntrypageState extends State<Entrypage> {
 
     setState(() => isLoading = false);
 
-    if (user != null && uid == user.uid) {
-      Navigator.push(
+    if (user != null && provider.userId == user.uid) {
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => AppMainScreen()),
+        (Route<dynamic> route) => false,
       );
     } else {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.remove('uid');
       Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
     }
@@ -46,10 +60,7 @@ class _EntrypageState extends State<Entrypage> {
         height: double.infinity,
         margin: EdgeInsets.only(top: 20),
 
-        decoration: BoxDecoration(
-          border: Border(),
-          color: bgColor,
-        ),
+        decoration: BoxDecoration(border: Border(), color: bgColor),
 
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
-import 'package:flutter_recipe_app/screens/Receiptdetails.dart';
+import 'package:flutter_recipe_app/screens/receipe_details.dart';
 import 'package:iconsax/iconsax.dart';
 
 class FoodItemsDisplay extends StatelessWidget {
@@ -67,7 +67,7 @@ class FoodItemsDisplay extends StatelessWidget {
                     Icon(Iconsax.clock, size: 16, color: Colors.grey),
                     SizedBox(width: 5),
                     Text(
-                      documentSnapshot['time'],
+                      "${documentSnapshot['time']} Mins",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,

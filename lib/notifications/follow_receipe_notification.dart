@@ -1,9 +1,9 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_recipe_app/notifications/navigationhelpers.dart';
 import 'package:flutter_recipe_app/providers/notification_providers.dart';
+import 'package:flutter_recipe_app/utils/constants.dart';
 
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,9 +13,11 @@ class UserFollowRecipeCard extends StatefulWidget {
   final String userInfo;
   final String productInfo;
   final Timestamp time;
+  final bool ismodal;
 
   const UserFollowRecipeCard({
     super.key,
+    required this.ismodal,
     required this.notType,
     required this.userInfo,
     required this.productInfo,
@@ -58,8 +60,11 @@ class _UserFollowRecipeCardState extends State<UserFollowRecipeCard> {
         height: MediaQuery.of(context).size.height * 0.09,
         margin: EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: widget.ismodal ? modalscolor : Colors.white,
+          borderRadius:
+              widget.ismodal
+                  ? BorderRadius.circular(15)
+                  : BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -147,12 +152,19 @@ class _UserFollowRecipeCardState extends State<UserFollowRecipeCard> {
                         builder: (context, _) {
                           final eventTime = widget.time.toDate();
                           final duration = DateTime.now().difference(eventTime);
-                          final timeText =
-                              duration.inDays > 0
-                                  ? '${duration.inDays}d${duration.inDays > 1 ? 's' : ''}'
-                                  : duration.inHours > 0
-                                  ? '${duration.inHours}hr${duration.inHours > 1 ? 's' : ''}'
-                                  : '${duration.inMinutes}min';
+
+                          String timeText;
+                          if (duration.inMinutes < 2) {
+                            timeText = 'now';
+                          } else if (duration.inDays > 0) {
+                            timeText =
+                                '${duration.inDays}d${duration.inDays > 1 ? 's' : ''}';
+                          } else if (duration.inHours > 0) {
+                            timeText =
+                                '${duration.inHours}hr${duration.inHours > 1 ? 's' : ''}';
+                          } else {
+                            timeText = '${duration.inMinutes}min';
+                          }
 
                           return Text(
                             timeText,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:flutter_recipe_app/notifications/notificationcount.dart';
 import 'package:flutter_recipe_app/profilefunctions/profilecountscard.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/providers/notification_providers.dart';
@@ -78,7 +79,7 @@ class _ProfileState extends State<Profile> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
-        child: Container(
+        child: SizedBox(
           width: MediaQuery.of(context).size.width * 1,
           height: MediaQuery.of(context).size.height * 1,
 
@@ -120,9 +121,8 @@ class _ProfileState extends State<Profile> {
                         ),
                         height: double.infinity,
                         child: Center(
-                          child: IconButton(
-                            onPressed: () => {},
-                            icon: Icon(Iconsax.notification, size: 25),
+                          child: Center(
+                            child: const NotificationIconWithBadge(),
                           ),
                         ),
                       ),

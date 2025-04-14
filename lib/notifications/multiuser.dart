@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_recipe_app/notifications/navigationhelpers.dart';
+import 'package:flutter_recipe_app/utils/constants.dart';
 
 class MultiUserNotification extends StatefulWidget {
   final List<dynamic> usersIds;
   final String recipeId;
   final Timestamp time;
+  final bool ismodal;
 
   const MultiUserNotification({
     super.key,
     required this.usersIds,
     required this.recipeId,
+    required this.ismodal,
     required this.time,
   });
 
@@ -42,7 +45,7 @@ class _MultiUserNotificationState extends State<MultiUserNotification> {
         margin: EdgeInsets.symmetric(vertical: 6),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: widget.ismodal ? modalscolor : Colors.white,
           borderRadius: BorderRadius.circular(12),
         ),
         height: MediaQuery.of(context).size.height * 0.14,
@@ -69,11 +72,11 @@ class _MultiUserNotificationState extends State<MultiUserNotification> {
                   final firstPhoto =
                       snapshot.hasData
                           ? snapshot.data![0]['profilePhoto']
-                          : 'https://i.pravatar.cc/150?img=4';
+                          : 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png';
                   final secondPhoto =
                       snapshot.hasData
                           ? snapshot.data![1]['profilePhoto']
-                          : 'https://i.pravatar.cc/150?img=4';
+                          : 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png';
 
                   return Stack(
                     children: [
@@ -135,16 +138,19 @@ class _MultiUserNotificationState extends State<MultiUserNotification> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const TextSpan(text: ' ,'),
+                            const TextSpan(text: ' , '),
                             TextSpan(
                               text: user2['fullNames'] ?? 'User 2',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            if (othersCount > 0) TextSpan(text: 'and'),
-                            TextSpan(text: '$othersCount'),
-                            TextSpan(text: 'others'),
+                            if (othersCount > 0) TextSpan(text: ' and '),
+                            TextSpan(
+                              text: '$othersCount',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            TextSpan(text: ' others'),
                           ],
                         ),
                       );
@@ -171,11 +177,14 @@ class _MultiUserNotificationState extends State<MultiUserNotification> {
                             final duration = DateTime.now().difference(
                               eventTime,
                             );
+
                             final timeText =
-                                duration.inDays > 0
-                                    ? '${duration.inDays}d${duration.inDays > 1 ? '' : ''}'
+                                duration.inMinutes < 2
+                                    ? 'now'
+                                    : duration.inDays > 0
+                                    ? '${duration.inDays}d'
                                     : duration.inHours > 0
-                                    ? '${duration.inHours}h${duration.inHours > 1 ? '' : ''}'
+                                    ? '${duration.inHours}h'
                                     : '${duration.inMinutes}m';
 
                             return Text(
@@ -206,7 +215,9 @@ class _MultiUserNotificationState extends State<MultiUserNotification> {
                         image:
                             imageUrl != null
                                 ? NetworkImage(imageUrl)
-                                : AssetImage('') as ImageProvider,
+                                : NetworkImage(
+                                  'https://via.placeholder.com/150',
+                                ),
                         fit: BoxFit.cover,
                       ),
                     ),

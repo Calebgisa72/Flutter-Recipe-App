@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import '../screens/login.dart';
@@ -12,6 +13,7 @@ class Signup extends StatefulWidget {
 
 class _SignupState extends State<Signup> {
   final _emailController = TextEditingController();
+  final _fullNamesController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool isPasswordLong = false;
@@ -20,31 +22,47 @@ class _SignupState extends State<Signup> {
   bool isLoading = false;
   bool emailerror = false;
   bool isEmailEmpty = false;
+  bool isNamesEmpty = false;
   bool isPasswordEmpty = false;
   String emptyMessage = '';
   String responseMessage = '';
 
-  Future<void> signUp(String email, String password) async {
+  Future<void> signUp(String email, String password, String fullNames) async {
     setState(() => isLoading = true);
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      final uid = userCredential.user!.uid;
+
+      await FirebaseFirestore.instance.collection('Users').doc(uid).set({
+        'fullNames': fullNames.trim(),
+        'profilePhoto':
+            'https://cdn-icons-png.flaticon.com/128/3135/3135715.png',
+      });
+
+      await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(uid)
+          .collection('devices')
+          .add({'createdAt': FieldValue.serverTimestamp()});
+
+      await FirebaseFirestore.instance.collection('Connectivity').doc(uid).set({
+        'Followedby': [],
+        'Follows': [],
+      });
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => Login()),
       );
-      setState(() => isLoading = false);
     } catch (e) {
       if (e is FirebaseAuthException && e.code == 'email-already-in-use') {
-        setState(() => responseMessage = "email already in  use");
-        setState(() => isLoading = false);
-      } else {
-        setState(() => isLoading = false);
+        setState(() => responseMessage = "email already in use");
       }
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -67,7 +85,9 @@ class _SignupState extends State<Signup> {
 
   bool get isButtonEnabled {
     final bothEmpty =
-        _emailController.text.isEmpty && _passwordController.text.isEmpty;
+        _fullNamesController.text.isEmpty &&
+        _emailController.text.isEmpty &&
+        _passwordController.text.isEmpty;
     return bothEmpty || (!emailerror && isPasswordLong && hasPasswordNumber);
   }
   // bool isButtonEnabled = false;
@@ -245,6 +265,52 @@ class _SignupState extends State<Signup> {
               ),
 
               Container(
+                margin: EdgeInsets.only(top: 20),
+                width: MediaQuery.of(context).size.width * 0.85,
+                height: MediaQuery.of(context).size.height * 0.07,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: isNamesEmpty ? Colors.red : textInputBorderColor,
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(bRadius),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      margin: EdgeInsets.only(left: 20),
+                      child: Icon(Icons.person),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        child: TextFormField(
+                          controller: _fullNamesController,
+                          decoration: InputDecoration(
+                            hintText: 'full names',
+                            border: InputBorder.none,
+                            hintStyle: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              emptyMessage = '';
+
+                              isNamesEmpty = false;
+                              responseMessage = '';
+                            });
+                          },
+                        ), //
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Container(
                 width: MediaQuery.of(context).size.width * 0.85,
                 height: MediaQuery.of(context).size.height * 0.13,
                 margin: EdgeInsets.only(top: 10),
@@ -325,6 +391,7 @@ class _SignupState extends State<Signup> {
                           ? () {
                             setState(() {
                               isEmailEmpty = _emailController.text.isEmpty;
+                              isNamesEmpty = _fullNamesController.text.isEmpty;
                               isPasswordEmpty =
                                   _passwordController.text.isEmpty;
 
@@ -334,10 +401,13 @@ class _SignupState extends State<Signup> {
                                       : '';
                             });
 
-                            if (!isEmailEmpty && !isPasswordEmpty) {
+                            if (!isEmailEmpty &&
+                                !isPasswordEmpty &&
+                                !isNamesEmpty) {
                               signUp(
                                 _emailController.text,
                                 _passwordController.text,
+                                _fullNamesController.text,
                               );
                             }
                           }
@@ -529,6 +599,7 @@ class _SignupState extends State<Signup> {
   @override
   void dispose() {
     _emailController.dispose();
+    _fullNamesController.dispose();
     _passwordController.dispose();
     super.dispose();
   }

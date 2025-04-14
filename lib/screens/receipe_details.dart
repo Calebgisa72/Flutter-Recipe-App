@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
+import 'package:flutter_recipe_app/notifications/notificationcount.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/screens/profile.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
@@ -360,7 +361,15 @@ class _DetailState extends State<Details> {
                     },
                   ),
                   Spacer(),
-                  MyIconButton(icon: Iconsax.notification, pressed: () {}),
+                  Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadiusDirectional.circular(15),
+                      color: Colors.white,
+                    ),
+                    child: Center(child: const NotificationIconWithBadge()),
+                  ),
                 ],
               ),
             ),

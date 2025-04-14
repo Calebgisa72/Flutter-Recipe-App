@@ -1,0 +1,462 @@
+import 'dart:convert';
+import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_recipe_app/notifications/navigationhelpers.dart';
+import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
+
+class NotificationService {
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  static FlutterLocalNotificationsPlugin get plugin => _notificationsPlugin;
+
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+  static bool _channelCreated = false;
+
+  static Future<void> initialize() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    await _notificationsPlugin.initialize(
+      const InitializationSettings(android: initializationSettingsAndroid),
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload != null) {
+          try {
+            final data = jsonDecode(response.payload!);
+            final context = navigatorKey.currentContext;
+            if (context != null && context.mounted) {
+              handleNavigation(context, data);
+            }
+          } catch (e) {
+            debugPrint('Navigation error: $e');
+          }
+        }
+      },
+    );
+
+    await _ensureNotificationChannel();
+    await _configureFirebaseMessaging();
+  }
+
+  static Future<void> _ensureNotificationChannel() async {
+    if (_channelCreated) return;
+
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'high_importance_channel',
+      'High Importance Notifications',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
+
+    _channelCreated = true;
+  }
+
+  static Future<void> _configureFirebaseMessaging() async {
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+  }
+
+  static Future<void> displayNotification(RemoteMessage message) async {
+    try {
+      final title = message.data['title'];
+      final body = message.data['body'];
+      final type = message.data['type'];
+      final imageUrl = message.data['imageurl'];
+
+      if ((title == null || title.isEmpty) && (body == null || body.isEmpty))
+        return;
+
+      AndroidBitmap<Object> largeIcon;
+
+      if (type == 'follow') {
+        final bytes = await _loadImageBytes(imageUrl);
+        largeIcon = ByteArrayAndroidBitmap(await _createCircularBitmap(bytes));
+      } else if (type == 'liked') {
+        final userIds = (message.data['userIds'] ?? '').split(',');
+        if (userIds.length > 1) {
+          final bytes1 = await _loadImageBytes(message.data['imageurl1']!);
+          final bytes2 = await _loadImageBytes(message.data['imageurl2']!);
+          largeIcon = ByteArrayAndroidBitmap(
+            await _createOverlappingAvatars(bytes1, bytes2),
+          );
+        } else {
+          final imageUrl1 = message.data['imageurl1'];
+          final bytes = await _loadImageBytes(imageUrl1);
+          largeIcon = ByteArrayAndroidBitmap(
+            await _createCircularBitmap(bytes),
+          );
+        }
+      } else {
+        largeIcon = ByteArrayAndroidBitmap(await _loadImageBytes(imageUrl));
+      }
+
+      await _notificationsPlugin.show(
+        message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch,
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'high_importance_channel',
+            'High Importance Notifications',
+            largeIcon: largeIcon,
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Notification error: $e');
+    }
+  }
+
+  static Future<Uint8List> _loadImageBytes(String url) async {
+    return (await NetworkAssetBundle(
+      Uri.parse(url),
+    ).load("")).buffer.asUint8List();
+  }
+
+  static Future<Uint8List> _createCircularBitmap(Uint8List imageBytes) async {
+    final image = await decodeImageFromList(imageBytes);
+    final size = min(image.width, image.height);
+    final recorder = PictureRecorder();
+    final canvas = Canvas(recorder);
+    final radius = size / 2;
+
+    canvas.drawCircle(
+      Offset(radius, radius),
+      radius,
+      Paint()
+        ..isAntiAlias = true
+        ..shader = ImageShader(
+          image,
+          TileMode.clamp,
+          TileMode.clamp,
+          Matrix4.identity().storage,
+        ),
+    );
+
+    final img = await recorder.endRecording().toImage(size, size);
+    return (await img.toByteData(
+      format: ImageByteFormat.png,
+    ))!.buffer.asUint8List();
+  }
+
+  static Future<Uint8List> _createOverlappingAvatars(
+    Uint8List image1,
+    Uint8List image2,
+  ) async {
+    final img1 = await decodeImageFromList(image1);
+    final img2 = await decodeImageFromList(image2);
+    final radius = min(img1.width, img1.height) / 2;
+    final recorder = PictureRecorder();
+    final canvas = Canvas(recorder);
+    final overlap = radius * 0.12; // 12% overlap
+
+    // Both centered vertically
+    final centerY = radius;
+
+    // Right avatar (behind)
+    canvas.drawCircle(
+      Offset(radius + overlap, centerY),
+      radius,
+      Paint()
+        ..shader = ImageShader(
+          img2,
+          TileMode.clamp,
+          TileMode.clamp,
+          Matrix4.identity().storage,
+        ),
+    );
+
+    // Left avatar (12% overlap)
+    canvas.drawCircle(
+      Offset(radius - overlap, centerY),
+      radius,
+      Paint()
+        ..shader = ImageShader(
+          img1,
+          TileMode.clamp,
+          TileMode.clamp,
+          Matrix4.identity().storage,
+        ),
+    );
+
+    // Compact size (just 12% wider than single avatar)
+    final img = await recorder.endRecording().toImage(
+      (radius * 2.12).round(),
+      (radius * 2).round(),
+    );
+    return (await img.toByteData(
+      format: ImageByteFormat.png,
+    ))!.buffer.asUint8List();
+  }
+
+  static void handleNavigation(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) {
+    final type = data['type'];
+
+    switch (type) {
+      case 'liked':
+      case 'new_recipe':
+        if (data['productInfo'] != null) {
+          navigateToRecipe(context, data['productInfo']);
+        }
+        break;
+      case 'follow':
+        if (data['sender'] != null) {
+          navigateToProfile(context, data['sender']);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+}
+import 'dart:convert';
+import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_recipe_app/notifications/navigationhelpers.dart';
+import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
+
+class NotificationService {
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  static FlutterLocalNotificationsPlugin get plugin => _notificationsPlugin;
+
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+  static bool _channelCreated = false;
+
+  static Future<void> initialize() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    await _notificationsPlugin.initialize(
+      const InitializationSettings(android: initializationSettingsAndroid),
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload != null) {
+          try {
+            final data = jsonDecode(response.payload!);
+            final context = navigatorKey.currentContext;
+            if (context != null && context.mounted) {
+              handleNavigation(context, data);
+            }
+          } catch (e) {
+            debugPrint('Navigation error: $e');
+          }
+        }
+      },
+    );
+
+    await _ensureNotificationChannel();
+    await _configureFirebaseMessaging();
+  }
+
+  static Future<void> _ensureNotificationChannel() async {
+    if (_channelCreated) return;
+
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'high_importance_channel',
+      'High Importance Notifications',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
+
+    _channelCreated = true;
+  }
+
+  static Future<void> _configureFirebaseMessaging() async {
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+  }
+
+  static Future<void> displayNotification(RemoteMessage message) async {
+    try {
+      final title = message.data['title'];
+      final body = message.data['body'];
+      final type = message.data['type'];
+      final imageUrl = message.data['imageurl'];
+
+      if ((title == null || title.isEmpty) && (body == null || body.isEmpty))
+        return;
+
+      AndroidBitmap<Object> largeIcon;
+
+      if (type == 'follow') {
+        final bytes = await _loadImageBytes(imageUrl);
+        largeIcon = ByteArrayAndroidBitmap(await _createCircularBitmap(bytes));
+      } else if (type == 'liked') {
+        final userIds = (message.data['userIds'] ?? '').split(',');
+        if (userIds.length > 1) {
+          final bytes1 = await _loadImageBytes(message.data['imageurl1']!);
+          final bytes2 = await _loadImageBytes(message.data['imageurl2']!);
+          largeIcon = ByteArrayAndroidBitmap(
+            await _createOverlappingAvatars(bytes1, bytes2),
+          );
+        } else {
+          final imageUrl1 = message.data['imageurl1'];
+          final bytes = await _loadImageBytes(imageUrl1);
+          largeIcon = ByteArrayAndroidBitmap(
+            await _createCircularBitmap(bytes),
+          );
+        }
+      } else {
+        largeIcon = ByteArrayAndroidBitmap(await _loadImageBytes(imageUrl));
+      }
+
+      await _notificationsPlugin.show(
+        message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch,
+        title,
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'high_importance_channel',
+            'High Importance Notifications',
+            largeIcon: largeIcon,
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Notification error: $e');
+    }
+  }
+
+  static Future<Uint8List> _loadImageBytes(String url) async {
+    return (await NetworkAssetBundle(
+      Uri.parse(url),
+    ).load("")).buffer.asUint8List();
+  }
+
+  static Future<Uint8List> _createCircularBitmap(Uint8List imageBytes) async {
+    final image = await decodeImageFromList(imageBytes);
+    final size = min(image.width, image.height);
+    final recorder = PictureRecorder();
+    final canvas = Canvas(recorder);
+    final radius = size / 2;
+
+    canvas.drawCircle(
+      Offset(radius, radius),
+      radius,
+      Paint()
+        ..isAntiAlias = true
+        ..shader = ImageShader(
+          image,
+          TileMode.clamp,
+          TileMode.clamp,
+          Matrix4.identity().storage,
+        ),
+    );
+
+    final img = await recorder.endRecording().toImage(size, size);
+    return (await img.toByteData(
+      format: ImageByteFormat.png,
+    ))!.buffer.asUint8List();
+  }
+
+  static Future<Uint8List> _createOverlappingAvatars(
+    Uint8List image1,
+    Uint8List image2,
+  ) async {
+    final img1 = await decodeImageFromList(image1);
+    final img2 = await decodeImageFromList(image2);
+    final radius = min(img1.width, img1.height) / 2;
+    final recorder = PictureRecorder();
+    final canvas = Canvas(recorder);
+    final overlap = radius * 0.12; // 12% overlap
+
+    // Both centered vertically
+    final centerY = radius;
+
+    // Right avatar (behind)
+    canvas.drawCircle(
+      Offset(radius + overlap, centerY),
+      radius,
+      Paint()
+        ..shader = ImageShader(
+          img2,
+          TileMode.clamp,
+          TileMode.clamp,
+          Matrix4.identity().storage,
+        ),
+    );
+
+    // Left avatar (12% overlap)
+    canvas.drawCircle(
+      Offset(radius - overlap, centerY),
+      radius,
+      Paint()
+        ..shader = ImageShader(
+          img1,
+          TileMode.clamp,
+          TileMode.clamp,
+          Matrix4.identity().storage,
+        ),
+    );
+
+    // Compact size (just 12% wider than single avatar)
+    final img = await recorder.endRecording().toImage(
+      (radius * 2.12).round(),
+      (radius * 2).round(),
+    );
+    return (await img.toByteData(
+      format: ImageByteFormat.png,
+    ))!.buffer.asUint8List();
+  }
+
+  static void handleNavigation(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) {
+    final type = data['type'];
+
+    switch (type) {
+      case 'liked':
+      case 'new_recipe':
+        if (data['productInfo'] != null) {
+          navigateToRecipe(context, data['productInfo']);
+        }
+        break;
+      case 'follow':
+        if (data['sender'] != null) {
+          navigateToProfile(context, data['sender']);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+}

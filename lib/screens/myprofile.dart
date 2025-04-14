@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:flutter_recipe_app/notifications/notificationcount.dart';
 import 'package:flutter_recipe_app/notifications/recordnotification.dart';
 import 'package:flutter_recipe_app/profilefunctions/profilecountscard.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/screens/login.dart';
 import 'package:flutter_recipe_app/screens/recipe_upload_flow.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
-import 'package:iconsax/iconsax.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,14 +60,23 @@ class _MyProfileState extends State<MyProfile> {
   bool isLoggingOut = false;
 
   void handleLogout() async {
-    setState(() {
-      isLoggingOut = true;
-    });
+    setState(() => isLoggingOut = true);
 
     try {
-      await FirebaseAuth.instance.signOut();
+      final prefs = await SharedPreferences.getInstance();
+      final uid = prefs.getString('uid');
+      final deviceId = prefs.getString('deviceId');
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (uid != null && deviceId != null) {
+        await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(uid)
+            .collection('devices')
+            .doc(deviceId)
+            .delete();
+      }
+
+      await FirebaseAuth.instance.signOut();
       await prefs.remove('uid');
 
       Navigator.pushAndRemoveUntil(
@@ -76,11 +85,7 @@ class _MyProfileState extends State<MyProfile> {
         (route) => false,
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          isLoggingOut = false;
-        });
-      }
+      if (mounted) setState(() => isLoggingOut = false);
     }
   }
 
@@ -135,16 +140,12 @@ class _MyProfileState extends State<MyProfile> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         height: double.infinity,
-                        child: Center(
-                          child: IconButton(
-                            onPressed: () => {},
-                            icon: Icon(Iconsax.notification, size: 25),
-                          ),
-                        ),
+                        child: NotificationIconWithBadge(),
                       ),
                     ],
                   ),
                 ),
+
                 Column(
                   children: [
                     Container(
@@ -191,8 +192,7 @@ class _MyProfileState extends State<MyProfile> {
                                   .snapshots(),
                           builder: (context, recipeSnapshot) {
                             if (recipeSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                            }
+                                ConnectionState.waiting) {}
                             if (recipeSnapshot.hasError) {
                               print(
                                 'Error fetching recipes: ${recipeSnapshot.error}',
@@ -440,7 +440,7 @@ class _MyProfileState extends State<MyProfile> {
                                 crossAxisCount: 2,
                                 childAspectRatio: 0.65,
                                 crossAxisSpacing: 10,
-                                mainAxisSpacing: 15
+                                mainAxisSpacing: 15,
                               ),
                           itemBuilder: (context, index) {
                             return Column(

@@ -17,6 +17,10 @@ class NotificationProvider with ChangeNotifier {
         'Followedby': FieldValue.arrayUnion([currentUserId]),
       });
 
+      await _firestore.collection('Connectivity').doc(currentUserId).update({
+        'Follows': FieldValue.arrayUnion([targetUserId]),
+      });
+
       await recordFollowNotification(
         targetUserId: targetUserId,
         senderId: currentUserId,
@@ -41,9 +45,39 @@ class NotificationProvider with ChangeNotifier {
         'Followedby': FieldValue.arrayRemove([currentUserId]),
       });
 
+      await _firestore.collection('Connectivity').doc(currentUserId).update({
+        'Follows': FieldValue.arrayRemove([targetUserId]),
+      });
+
       notifyListeners();
     } catch (e) {
       debugPrint('Error unfollowing user: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> markAllNotificationsAsRead() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final uid = prefs.getString('uid');
+      if (uid == null) return;
+
+      final notifRef = _firestore
+          .collection('Notifications')
+          .doc(uid)
+          .collection('userNotifications');
+
+      final unread = await notifRef.where('isRead', isEqualTo: false).get();
+      final batch = _firestore.batch();
+
+      for (var doc in unread.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+
+      await batch.commit();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error marking notifications as read: $e');
       rethrow;
     }
   }

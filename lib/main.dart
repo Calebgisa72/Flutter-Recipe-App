@@ -2,29 +2,44 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/notifications/notificationsdialogs.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/providers/notification_providers.dart';
 import 'package:flutter_recipe_app/providers/notificationpush.dart';
-import 'package:flutter_recipe_app/screens/entrypage.dart';
+import 'package:flutter_recipe_app/screens/initial_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import './notifications/notification_service.dart';
 
 AppLifecycleState? _appLifecycleState;
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+@pragma('vm:entry-point')
+Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  if (message.data['handled'] == true) return;
+  message.data['handled'] = true;
+
+  debugPrint('📢 BACKGROUND NOTIFICATION recieved: ${message.data}');
+  try {
+    await NotificationService.displayNotification(message);
+  } catch (e) {
+    debugPrint('❌ Error: $e');
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await FirebaseMessaging.instance.requestPermission();
 
   WidgetsBinding.instance.addObserver(
     LifecycleObserver((state) => _appLifecycleState = state),
   );
 
+  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
   await NotificationService.initialize();
-  await _setupFCM();
 
   runApp(
     MultiProvider(
@@ -37,53 +52,21 @@ Future<void> main() async {
       child: const MyApp(),
     ),
   );
+
+  await _setupFCM();
 }
 
 Future<void> _setupFCM() async {
-  await FirebaseMessaging.instance.requestPermission();
-
-  // Foreground handler
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    debugPrint(
-      'FOREGROUND NOTIFICATION RECEIVED - Title: ${message.notification?.title}',
-    );
-    if (_appLifecycleState == AppLifecycleState.resumed) {
-      final context = navigatorKey.currentContext;
-      if (context != null) {
-        debugPrint('CALLING PROVIDER FOR CUSTOM DIALOG');
-        Provider.of<PushNotificationProvider>(
-          context,
-          listen: false,
-        ).showNotificationDialog(
-          context: context,
-          notificationData: message.data,
-        );
-      }
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    debugPrint('📢 Foreground notification received: ${message.data}');
+    final context = NotificationService.navigatorKey.currentContext;
+    if (context != null && context.mounted) {
+      showNotificationDialog(context, message.data, message.data['type'] ?? '');
     }
   });
 
-  // Background handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
-
-  // Token updates
   FirebaseMessaging.instance.onTokenRefresh.listen(_updateTokenInFirestore);
-
-  // Terminated state handler
-  RemoteMessage? initialMessage =
-      await FirebaseMessaging.instance.getInitialMessage();
-  if (initialMessage != null) {
-    debugPrint('APP OPENED FROM TERMINATED STATE VIA NOTIFICATION');
-    _handleNotificationClick(initialMessage);
-  }
-}
-
-@pragma('vm:entry-point')
-Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  debugPrint(
-    'BACKGROUND NOTIFICATION RECEIVED - Title: ${message.notification?.title}',
-  );
-  debugPrint('SYSTEM NOTIFICATION WILL SHOW AUTOMATICALLY');
+  debugPrint("✅ onMessageOpenedApp LISTENER REGISTERED");
 }
 
 Future<void> _updateTokenInFirestore(String token) async {
@@ -96,22 +79,10 @@ Future<void> _updateTokenInFirestore(String token) async {
         .doc(uid)
         .collection('devices')
         .doc(deviceId)
-        .update({
+        .set({
           'fcmToken': token,
           'lastActive': FieldValue.serverTimestamp(),
-        });
-  }
-}
-
-void _handleNotificationClick(RemoteMessage message) async {
-  debugPrint('HANDLING NOTIFICATION CLICK - Payload: ${message.data}');
-  final context = navigatorKey.currentContext;
-  if (context != null) {
-    debugPrint('PROVIDER CALLED FOR NOTIFICATION ACTION');
-    Provider.of<PushNotificationProvider>(
-      context,
-      listen: false,
-    ).showNotificationDialog(context: context, notificationData: message.data);
+        }, SetOptions(merge: true));
   }
 }
 
@@ -131,10 +102,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey,
+      navigatorKey: NotificationService.navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Cookmate',
-      home: Entrypage(),
+      home: const InitialScreen(),
     );
   }
 }

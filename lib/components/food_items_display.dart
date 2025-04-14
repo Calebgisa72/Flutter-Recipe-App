@@ -1,13 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/screens/receipe_details.dart';
 import 'package:iconsax/iconsax.dart';
 
 class FoodItemsDisplay extends StatelessWidget {
   final DocumentSnapshot<Object?> documentSnapshot;
-
-  const FoodItemsDisplay({super.key, required this.documentSnapshot});
+  final bool? isOnAnotherUserPage;
+  const FoodItemsDisplay({
+    super.key,
+    required this.documentSnapshot,
+    this.isOnAnotherUserPage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -78,29 +83,41 @@ class FoodItemsDisplay extends StatelessWidget {
                 ),
               ],
             ),
-            Positioned(
-              top: 5,
-              right: 5,
-              child: CircleAvatar(
-                backgroundColor: Colors.white,
-                radius: 18,
-                child: InkWell(
-                  onTap: () {
-                    favProvider.toggleFavorite(documentSnapshot, context);
-                  },
-                  child:
-                      favProvider.isLoading(documentSnapshot.id)
-                          ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : favProvider.alreadyFav(documentSnapshot)
-                          ? Icon(Iconsax.heart5, color: Colors.red, size: 24)
-                          : Icon(Iconsax.heart, color: Colors.black, size: 24),
-                ),
-              ),
-            ),
+            isOnAnotherUserPage == null
+                ? Positioned(
+                  top: 5,
+                  right: 5,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    radius: 18,
+                    child: InkWell(
+                      onTap: () {
+                        favProvider.toggleFavorite(documentSnapshot, context);
+                      },
+                      child:
+                          favProvider.isLoading(documentSnapshot.id)
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : favProvider.alreadyFav(documentSnapshot)
+                              ? Icon(
+                                Iconsax.heart5,
+                                color: Colors.red,
+                                size: 24,
+                              )
+                              : Icon(
+                                Iconsax.heart,
+                                color: Colors.black,
+                                size: 24,
+                              ),
+                    ),
+                  ),
+                )
+                : Center(),
           ],
         ),
       ),

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
-import 'package:flutter_recipe_app/screens/Receiptdetails.dart';
+import 'package:flutter_recipe_app/screens/receipe_details.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -130,7 +130,7 @@ class FavoriteScreen extends StatelessWidget {
                                             ),
                                             SizedBox(width: 5),
                                             Text(
-                                              favoriteItem['time'],
+                                              '${favoriteItem['time']} Mins',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,

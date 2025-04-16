@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/banner.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
+import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/screens/view_all_recipes.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
@@ -20,11 +21,18 @@ class _HomeScreenState extends State<HomeScreen> {
     'App-Category',
   );
 
+  String get currentUserId => AppMainProvider.of(context, listen: false).userId;
+
   Query get filteredRecipes => FirebaseFirestore.instance
       .collection('Recipe-App')
-      .where('category', isEqualTo: category);
+      .where('category', isEqualTo: category)
+      .where('userId', isNotEqualTo: currentUserId)
+      .orderBy('userId')
+      .orderBy('name');
 
-  Query get allRecipes => FirebaseFirestore.instance.collection('Recipe-App');
+  Query get allRecipes => FirebaseFirestore.instance
+      .collection('Recipe-App')
+      .where('userId', isNotEqualTo: currentUserId);
 
   Query get selectedRecipes => category == "All" ? allRecipes : filteredRecipes;
 
@@ -177,7 +185,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                     margin: EdgeInsets.only(right: 20),
                     child: Text(
-                      streamSnapshot.data!.docs[index]["name"],
+                      streamSnapshot.data!.docs[index]["name"][0]
+                              .toUpperCase() +
+                          streamSnapshot.data!.docs[index]["name"].substring(1),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color:

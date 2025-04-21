@@ -121,6 +121,7 @@ class _ProfileState extends State<Profile> {
         child: Container(
           width: MediaQuery.of(context).size.width * 1,
           height: MediaQuery.of(context).size.height * 1,
+          color: bgColor,
 
           child: Container(
             margin: EdgeInsets.only(top: 18),
@@ -128,7 +129,7 @@ class _ProfileState extends State<Profile> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 12),
+                SizedBox(height: 30),
                 Container(
                   width: MediaQuery.of(context).size.width * 0.94,
 
@@ -142,19 +143,19 @@ class _ProfileState extends State<Profile> {
                     children: [
                       Container(
                         width: 40,
+                        height: double.infinity,
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        height: double.infinity,
 
-                        child: Center(
-                          child: IconButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            icon: Icon(Icons.arrow_back, size: 30),
-                          ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          icon: Icon(Icons.chevron_left, size: 28),
                         ),
                       ),
 
@@ -169,7 +170,7 @@ class _ProfileState extends State<Profile> {
                         child: Center(
                           child: IconButton(
                             onPressed: () => {},
-                            icon: Icon(Iconsax.notification, size: 28),
+                            icon: Icon(Iconsax.notification, size: 25),
                           ),
                         ),
                       ),
@@ -184,7 +185,7 @@ class _ProfileState extends State<Profile> {
                       height: 130,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(width: 1, color: Colors.black),
+
                         image: DecorationImage(
                           image: NetworkImage(
                             userData['profilePhoto'] as String,
@@ -193,7 +194,7 @@ class _ProfileState extends State<Profile> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 10),
                     Text(
                       userData['fullNames'] as String,
                       style: TextStyle(
@@ -201,8 +202,8 @@ class _ProfileState extends State<Profile> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 16),
-                    // Followers/following counts
+                    SizedBox(height: 10),
+
                     StreamBuilder<QuerySnapshot>(
                       stream:
                           FirebaseFirestore.instance
@@ -254,7 +255,7 @@ class _ProfileState extends State<Profile> {
                     ),
                   ],
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: 10),
 
                 Container(
                   width: MediaQuery.of(context).size.width * 0.94,
@@ -335,13 +336,14 @@ class _ProfileState extends State<Profile> {
                             MediaQuery.of(context).size.height * 0.07,
                           ),
                         ),
-                        child: Icon(Icons.edit, color: Colors.white, size: 26),
+                        child: Icon(Icons.share, color: Colors.white, size: 26),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.only(top: 20),
+                  margin: EdgeInsets.only(top: 8),
+
                   width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.width * 0.1,
 
@@ -438,9 +440,8 @@ class _ProfileState extends State<Profile> {
                   ),
                 ),
                 Container(
-                  decoration: BoxDecoration(),
                   width: MediaQuery.of(context).size.width * 0.94,
-                  height: MediaQuery.of(context).size.height * 0.42,
+                  height: MediaQuery.of(context).size.height * 0.414,
 
                   child: StreamBuilder<QuerySnapshot>(
                     stream: allRecipes.snapshots(),

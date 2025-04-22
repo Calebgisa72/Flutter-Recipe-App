@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:flutter_recipe_app/utils/constants.dart';
-
 import 'package:iconsax/iconsax.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -54,8 +52,6 @@ class _ProfileState extends State<Profile> {
 
     return snapshot.docs.map((doc) => doc.id).toList();
   }
-
-  Stream<QuerySnapshot>? _connectivityStream;
 
   int get followersCount =>
       (_connectivityDoc?['Followedby'] as List?)?.length ?? 0;

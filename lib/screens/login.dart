@@ -3,7 +3,6 @@ import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
-import 'myprofile.dart';
 import '../screens/signup.dart';
 
 class Login extends StatefulWidget {

@@ -5,6 +5,7 @@ import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/screens/view_all_recipes.dart';
+import 'package:flutter_recipe_app/services/database_service.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -20,6 +21,51 @@ class _HomeScreenState extends State<HomeScreen> {
   final CollectionReference categories = FirebaseFirestore.instance.collection(
     'App-Category',
   );
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkDraft();
+    });
+  }
+
+  Future<void> checkDraft() async {
+    final d = await DatabaseService.instance.getDraft();
+    if (mounted) {
+      if (d != null) {
+        _showDraftNotification();
+      }
+    }
+  }
+
+  void _showDraftNotification() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '📝 You have an unsaved recipe draft! Tap to continue editing.',
+          style: TextStyle(fontSize: 16),
+        ),
+        duration: Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Continue',
+          textColor: Colors.amber,
+          onPressed: () {
+            AppMainProvider.of(context, listen: false).setSelectedTab(2);
+          },
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   String get currentUserId => AppMainProvider.of(context, listen: false).userId;
 
@@ -165,40 +211,53 @@ class _HomeScreenState extends State<HomeScreen> {
         if (streamSnapshot.hasData) {
           return SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            controller: _scrollController,
             child: Row(
-              children: List.generate(
-                streamSnapshot.data!.docs.length,
-                (index) => GestureDetector(
+              children: List.generate(streamSnapshot.data!.docs.length, (
+                index,
+              ) {
+                final categoryName = streamSnapshot.data!.docs[index]["name"];
+                final isSelected = category == categoryName;
+
+                final categoryKey = GlobalKey();
+
+                if (isSelected) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (categoryKey.currentContext != null) {
+                      Scrollable.ensureVisible(
+                        categoryKey.currentContext!,
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        alignment: 0.5,
+                      );
+                    }
+                  });
+                }
+
+                return GestureDetector(
+                  key: categoryKey,
                   onTap: () {
                     setState(() {
-                      category = streamSnapshot.data!.docs[index]["name"];
+                      category = categoryName;
                     });
                   },
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(25),
-                      color:
-                          category == streamSnapshot.data!.docs[index]["name"]
-                              ? primaryColor
-                              : Colors.white,
+                      color: isSelected ? primaryColor : Colors.white,
                     ),
                     padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                     margin: EdgeInsets.only(right: 20),
                     child: Text(
-                      streamSnapshot.data!.docs[index]["name"][0]
-                              .toUpperCase() +
-                          streamSnapshot.data!.docs[index]["name"].substring(1),
+                      categoryName[0].toUpperCase() + categoryName.substring(1),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color:
-                            category == streamSnapshot.data!.docs[index]["name"]
-                                ? Colors.white
-                                : Colors.grey.shade600,
+                        color: isSelected ? Colors.white : Colors.grey.shade600,
                       ),
                     ),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
           );
         }

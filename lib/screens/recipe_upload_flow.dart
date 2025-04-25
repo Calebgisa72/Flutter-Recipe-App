@@ -6,6 +6,7 @@ import 'package:flutter_recipe_app/forms/ingredients_form.dart';
 import 'package:flutter_recipe_app/models/recipe_model.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/screens/app_main_screen.dart';
+import 'package:flutter_recipe_app/services/database_service.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 
 class RecipeFormFlow extends StatefulWidget {
@@ -20,8 +21,9 @@ class RecipeFormFlow extends StatefulWidget {
 class _RecipeFormFlowState extends State<RecipeFormFlow> {
   int _currentStep = 0;
   RecipeFormData? formData;
-  bool _isLoading = true;
   late String userId;
+  bool _showDraftDialog = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -33,23 +35,90 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
     }
     userId = AppMainProvider.of(context, listen: false).userId;
 
-    _initializeFormData();
-    _isLoading = false;
-  }
-
-  Future<void> _initializeFormData() async {
-    try {
-      if (widget.edit) {
-        formData = RecipeFormData.fromDocument(widget.documentSnapshot, userId);
-      } else {
-        formData = RecipeFormData(userId: userId);
-      }
-    } catch (e) {
-      debugPrint('Error initializing form: $e');
+    if (widget.edit) {
+      _initializeEditForm();
+    } else {
+      _checkForDraft();
     }
   }
 
+  void _initializeEditForm() {
+    setState(() {
+      formData = RecipeFormData.fromDocument(widget.documentSnapshot, userId);
+      _isLoading = false;
+    });
+  }
+
+  void setForm() {
+    setState(() {
+      formData = RecipeFormData(userId: userId);
+    });
+  }
+
+  Future<void> _checkForDraft() async {
+    try {
+      final draft = await DatabaseService.instance.getDraft();
+
+      if (!mounted) return;
+
+      setState(() {
+        if (draft != null) {
+          _showDraftDialog = true;
+        } else {
+          formData = RecipeFormData(userId: userId);
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error checking draft: $e');
+      if (mounted) {
+        setState(() {
+          formData = RecipeFormData(userId: userId);
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleDraftChoice(bool continueWithDraft) async {
+    setState(() {
+      _showDraftDialog = false;
+      _isLoading = true;
+    });
+
+    if (continueWithDraft) {
+      final draft = await DatabaseService.instance.getDraft();
+      setState(() {
+        _isLoading = false;
+      });
+      if (draft != null) {
+        formData = RecipeFormData(
+          userId: userId,
+          name: draft.name,
+          cal: draft.cal,
+          category: RecipeCategory.values.firstWhere(
+            (e) => e.name == draft.category,
+            orElse: () => RecipeCategory.lunch,
+          ),
+          image: draft.image,
+          rating: draft.rating,
+          time: draft.time,
+          description: draft.description,
+        );
+        setState(() {
+          _currentStep = draft.currentPage + 1;
+        });
+      }
+    } else {
+      await DatabaseService.instance.deleteDraft();
+      setForm();
+    }
+
+    if (mounted) setState(() {});
+  }
+
   void _nextStep() {
+    formData?.saveDraft(_currentStep);
     setState(() => _currentStep += 1);
   }
 
@@ -61,20 +130,25 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
+        backgroundColor: bgColor,
         body: Center(
           child: Column(
-            spacing: 10,
             mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 10,
             children: [
               CircularProgressIndicator(),
               Text(
-                'Loading Uploading Page',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                'Loading Upload Page',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
             ],
           ),
         ),
       );
+    }
+
+    if (_showDraftDialog) {
+      return _buildDraftDialog();
     }
 
     if (formData == null) {
@@ -85,7 +159,9 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
             children: [
               const Text('Failed to initialize form'),
               ElevatedButton(
-                onPressed: _initializeFormData,
+                onPressed: () {
+                  setForm();
+                },
                 child: const Text('Retry'),
               ),
             ],
@@ -95,6 +171,7 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
     }
 
     final tabProvider = AppMainProvider.of(context);
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
@@ -123,7 +200,7 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     content: Text(
-                      'Do you really want to cancel? Your changes will be lost.',
+                      'Do you really want to cancel? Your unsaved changes will be lost.',
                       style: TextStyle(fontSize: 16),
                     ),
                     actionsAlignment: MainAxisAlignment.end,
@@ -263,6 +340,46 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
       ),
     );
   }
+
+  Widget _buildDraftDialog() {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: Center(
+        child: AlertDialog(
+          backgroundColor: secondary,
+          title: Text(
+            'Continue Draft?',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'You have not submitted your draft. Would you like to continue?',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 15),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => _handleDraftChoice(false),
+              child: Text('New Recipe', style: TextStyle(fontSize: 16)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(bRadius),
+                ),
+              ),
+              onPressed: () => _handleDraftChoice(true),
+              child: Text(
+                'Continue Draft',
+                style: TextStyle(fontSize: 17, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class RecipeFormData {
@@ -313,7 +430,23 @@ class RecipeFormData {
     );
   }
 
+  Future<void> saveDraft(int currentPage) async {
+    final DatabaseService _databaseService = DatabaseService.instance;
+
+    await _databaseService.insertDraft({
+      'currentPage': currentPage,
+      'name': name,
+      'description': description,
+      'imageUrl': image,
+      'cal': cal,
+      'time': time,
+      'rating': rating,
+      'category': category.name,
+    });
+  }
+
   Future<void> submit([String? docId]) async {
+    DatabaseService.instance.deleteDraft();
     final recipe = RecipeModel(
       name: name,
       cal: cal,

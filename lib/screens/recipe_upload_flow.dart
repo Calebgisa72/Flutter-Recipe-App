@@ -49,12 +49,6 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
     });
   }
 
-  void setForm() {
-    setState(() {
-      formData = RecipeFormData(userId: userId);
-    });
-  }
-
   Future<void> _checkForDraft() async {
     try {
       final draft = await DatabaseService.instance.getDraft();
@@ -86,39 +80,49 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
       _isLoading = true;
     });
 
-    if (continueWithDraft) {
-      final draft = await DatabaseService.instance.getDraft();
-      setState(() {
-        _isLoading = false;
-      });
-      if (draft != null) {
-        formData = RecipeFormData(
-          userId: userId,
-          name: draft.name,
-          cal: draft.cal,
-          category: RecipeCategory.values.firstWhere(
-            (e) => e.name == draft.category,
-            orElse: () => RecipeCategory.lunch,
-          ),
-          image: draft.image,
-          rating: draft.rating,
-          time: draft.time,
-          description: draft.description,
-        );
+    try {
+      if (continueWithDraft) {
+        final draft = await DatabaseService.instance.getDraft();
+        if (draft != null) {
+          setState(() {
+            formData = RecipeFormData(
+              userId: userId,
+              name: draft.name,
+              cal: draft.cal,
+              category: RecipeCategory.values.firstWhere(
+                (e) => e.name == draft.category,
+                orElse: () => RecipeCategory.lunch,
+              ),
+              image: draft.image,
+              rating: draft.rating,
+              time: draft.time,
+              description: draft.description,
+            );
+            _currentStep = draft.currentPage;
+            _isLoading = false;
+          });
+        }
+      } else {
+        await DatabaseService.instance.deleteDraft();
         setState(() {
-          _currentStep = draft.currentPage + 1;
+          formData = RecipeFormData(userId: userId);
+          _currentStep = 0;
+          _isLoading = false;
         });
       }
-    } else {
-      await DatabaseService.instance.deleteDraft();
-      setForm();
+    } catch (e) {
+      debugPrint('Error handling draft choice: $e');
+      setState(() {
+        formData = RecipeFormData(userId: userId);
+        _isLoading = false;
+      });
     }
-
-    if (mounted) setState(() {});
   }
 
   void _nextStep() {
-    formData?.saveDraft(_currentStep);
+    if (!widget.edit) {
+      formData?.saveDraft(_currentStep);
+    }
     setState(() => _currentStep += 1);
   }
 
@@ -160,7 +164,7 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
               const Text('Failed to initialize form'),
               ElevatedButton(
                 onPressed: () {
-                  setForm();
+                  _checkForDraft();
                 },
                 child: const Text('Retry'),
               ),
@@ -431,9 +435,9 @@ class RecipeFormData {
   }
 
   Future<void> saveDraft(int currentPage) async {
-    final DatabaseService _databaseService = DatabaseService.instance;
+    final DatabaseService databaseService = DatabaseService.instance;
 
-    await _databaseService.insertDraft({
+    await databaseService.insertDraft({
       'currentPage': currentPage,
       'name': name,
       'description': description,

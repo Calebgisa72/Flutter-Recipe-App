@@ -1,9 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
 import '../screens/signup.dart';
+import 'package:uuid/uuid.dart';
+import 'dart:io' show Platform;
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -43,9 +48,26 @@ class _LoginState extends State<Login> {
             password: _passwordController.text.trim(),
           );
 
-      String uid = userCred.user!.uid;
+      final uid = userCred.user!.uid;
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
+      String deviceId = prefs.getString('deviceId') ?? const Uuid().v4();
+      await prefs.setString('deviceId', deviceId);
+
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(uid)
+            .collection('devices')
+            .doc(deviceId)
+            .set({
+              'fcmToken': fcmToken,
+              'lastActive': FieldValue.serverTimestamp(),
+              'platform': Platform.operatingSystem,
+            }, SetOptions(merge: true));
+      }
+
       await prefs.setString('uid', uid);
 
       Navigator.pushReplacement(
@@ -53,13 +75,14 @@ class _LoginState extends State<Login> {
         MaterialPageRoute(builder: (context) => AppMainScreen()),
       );
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        setState(() => responseMessage = 'User does not exist');
-      } else if (e.code == 'wrong-password') {
-        setState(() => responseMessage = 'Incorrect password');
-      } else {
-        setState(() => responseMessage = 'Incorrect password or email');
-      }
+      setState(() {
+        responseMessage =
+            e.code == 'user-not-found'
+                ? 'User does not exist'
+                : e.code == 'wrong-password'
+                ? 'Incorrect password'
+                : 'Login failed';
+      });
     } catch (e) {
       setState(() => responseMessage = 'An error occurred');
     } finally {
@@ -146,26 +169,24 @@ class _LoginState extends State<Login> {
                     ),
                     SizedBox(width: 12),
                     Expanded(
-                      child: Container(
-                        child: TextFormField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            hintText: 'Enter email',
-                            border: InputBorder.none,
-                            hintStyle: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
+                      child: TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          hintText: 'Enter email',
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
                           ),
-                          onChanged: (value) {
-                            setState(() {
-                              emailerror = !_validateEmail(value);
-                              emptyMessage = '';
-                              isEmailEmpty = false;
-                              responseMessage = '';
-                            });
-                          },
                         ),
+                        onChanged: (value) {
+                          setState(() {
+                            emailerror = !_validateEmail(value);
+                            emptyMessage = '';
+                            isEmailEmpty = false;
+                            responseMessage = '';
+                          });
+                        },
                       ),
                     ),
                   ],
@@ -196,18 +217,16 @@ class _LoginState extends State<Login> {
                     ),
                     SizedBox(width: 12),
                     Expanded(
-                      child: Container(
-                        child: TextField(
-                          controller: _passwordController,
-                          onChanged: onPasswordChanged,
-                          obscureText: !isPasswordVisible,
-                          decoration: InputDecoration(
-                            hintText: "Password",
-                            border: InputBorder.none,
-                            hintStyle: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
+                      child: TextField(
+                        controller: _passwordController,
+                        onChanged: onPasswordChanged,
+                        obscureText: !isPasswordVisible,
+                        decoration: InputDecoration(
+                          hintText: "Password",
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
                           ),
                         ),
                       ),
@@ -381,12 +400,7 @@ class _LoginState extends State<Login> {
                   borderRadius: BorderRadius.circular(bRadius),
                 ),
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AppMainScreen()),
-                    );
-                  },
+                  onPressed: () {},
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 199, 37, 37),
                     shape: RoundedRectangleBorder(

@@ -4,6 +4,7 @@ import 'package:flutter_recipe_app/forms/basic_info_form.dart';
 import 'package:flutter_recipe_app/forms/image_upload.dart';
 import 'package:flutter_recipe_app/forms/ingredients_form.dart';
 import 'package:flutter_recipe_app/models/recipe_model.dart';
+import 'package:flutter_recipe_app/notifications/recordnotification.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:flutter_recipe_app/services/database_service.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_recipe_app/utils/constants.dart';
 class RecipeFormFlow extends StatefulWidget {
   final bool edit;
   final DocumentSnapshot<Object?>? documentSnapshot;
+
   const RecipeFormFlow({super.key, required this.edit, this.documentSnapshot});
 
   @override
@@ -128,6 +130,15 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
 
   void _prevStep() {
     setState(() => _currentStep -= 1);
+  }
+
+  Future<List<String>> _getFollowers(String userId) async {
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('Connectivity')
+            .doc(userId)
+            .get();
+    return (doc.data()?['Followedby'] as List?)?.cast<String>() ?? [];
   }
 
   @override
@@ -261,6 +272,27 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
                 } else {
                   await formData!.submit();
                 }
+                final recipeId = await formData!.submit(
+                  widget.edit ? widget.documentSnapshot!.id : null,
+                );
+
+                final followers = await _getFollowers(formData!.userId);
+                final batch = FirebaseFirestore.instance.batch();
+
+                for (final followerId in followers) {
+                  await recordNewRecipeNotification(
+                    followerId: followerId,
+                    senderId: formData!.userId,
+                    recipeId: recipeId,
+                    context: context,
+                  );
+                }
+
+                await batch.commit();
+                print(
+                  '✅ Successfully recorded notifications for ${followers.length} followers',
+                );
+
                 showDialog(
                   context: context,
                   barrierDismissible: false,
@@ -465,8 +497,12 @@ class RecipeFormData {
 
     if (docId != null) {
       await recipe.updateRecipe(docId);
+      return docId;
     } else {
-      await recipe.createRecipe();
+      final docRef = await FirebaseFirestore.instance
+          .collection('recipes')
+          .add(recipe.toJson());
+      return docRef.id;
     }
   }
 }

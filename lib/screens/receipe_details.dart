@@ -147,6 +147,7 @@ class _DetailState extends State<Details> {
                                     onPressed: () {
                                       favProvider.toggleFavorite(
                                         widget.documentSnapshot,
+                                        context,
                                       );
                                     },
                                     icon:
@@ -368,49 +369,39 @@ class _DetailState extends State<Details> {
 }
 
 Widget buildUserDetails(String userId) {
-  print('User ID received: $userId');
-
-  return StreamBuilder<QuerySnapshot>(
+  return StreamBuilder<DocumentSnapshot>(
     stream:
         FirebaseFirestore.instance
             .collection('Users')
-            .where('userId', isEqualTo: userId)
+            .doc(userId.trim())
             .snapshots(),
     builder: (context, snapshot) {
-      if (!snapshot.hasData) return CircularProgressIndicator();
+      if (!snapshot.hasData) return const CircularProgressIndicator();
+      if (!snapshot.data!.exists) return const Text('User not found');
 
-      var docs = snapshot.data!.docs;
-
-      if (docs.isEmpty) {
-        return Center(child: Text('User not found'));
-      }
-
-      var documentSnapshot = docs.first;
-      var data = documentSnapshot.data() as Map<String, dynamic>;
-      String fullNames = data['fullNames'] ?? 'No name';
-      String profilePhoto = data['profilePhoto'] ?? '';
+      final data = snapshot.data!.data() as Map<String, dynamic>;
+      final fullNames = data['fullNames'] ?? 'No name';
+      final profilePhoto = data['profilePhoto'] ?? '';
 
       return Row(
         children: [
           InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (context) => Profile(documentSnapshot: documentSnapshot),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Profile(userId: userId),
+                  ),
                 ),
-              );
-            },
             child: Container(
               width: 38,
               height: 38,
               clipBehavior: Clip.hardEdge,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(bRadius),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(width: 1, color: Colors.black),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.black26,
                     blurRadius: 4,
@@ -421,14 +412,14 @@ Widget buildUserDetails(String userId) {
               child:
                   profilePhoto.isNotEmpty
                       ? Image.network(profilePhoto, fit: BoxFit.cover)
-                      : Icon(Icons.person, size: 20),
+                      : const Icon(Icons.person, size: 20),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               fullNames,
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 17),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 17),
               overflow: TextOverflow.ellipsis,
             ),
           ),

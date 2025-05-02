@@ -6,6 +6,7 @@ import 'package:flutter_recipe_app/screens/myprofile.dart';
 import 'package:flutter_recipe_app/screens/recipe_upload_flow.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppMainScreen extends StatefulWidget {
   const AppMainScreen({super.key});
@@ -18,13 +19,17 @@ class _AppMainScreenState extends State<AppMainScreen> {
   late final List<Widget> pages;
   @override
   void initState() {
-    pages = [
-      HomeScreen(),
-      FavoriteScreen(),
-      RecipeFormFlow(edit: false),
-      MyProfile(),
-    ];
     super.initState();
+    SharedPreferences.getInstance().then((prefs) {
+      setState(() {
+        pages = [
+          HomeScreen(),
+          FavoriteScreen(),
+          RecipeFormFlow(edit: false),
+          MyProfile(userId: prefs.getString('uid') ?? ''),
+        ];
+      });
+    });
   }
 
   @override
@@ -49,11 +54,15 @@ class _AppMainScreenState extends State<AppMainScreen> {
         ),
         items: [
           BottomNavigationBarItem(
-            icon: Icon(tabProvider.selectedTab == 0 ? Iconsax.home5 : Iconsax.home),
+            icon: Icon(
+              tabProvider.selectedTab == 0 ? Iconsax.home5 : Iconsax.home,
+            ),
             label: "Home",
           ),
           BottomNavigationBarItem(
-            icon: Icon(tabProvider.selectedTab == 1 ? Iconsax.heart5 : Iconsax.heart),
+            icon: Icon(
+              tabProvider.selectedTab == 1 ? Iconsax.heart5 : Iconsax.heart,
+            ),
             label: "Favorite",
           ),
           BottomNavigationBarItem(
@@ -65,7 +74,9 @@ class _AppMainScreenState extends State<AppMainScreen> {
             label: "Upload",
           ),
           BottomNavigationBarItem(
-            icon: Icon(tabProvider.selectedTab == 3 ? Iconsax.user4 : Iconsax.user),
+            icon: Icon(
+              tabProvider.selectedTab == 3 ? Iconsax.user4 : Iconsax.user,
+            ),
             label: "Profile",
           ),
         ],

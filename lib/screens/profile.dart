@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:flutter_recipe_app/profilefunctions/profilecountscard.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
-import 'package:flutter_recipe_app/providers/notificationpush.dart';
 import 'package:flutter_recipe_app/providers/notification_providers.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
@@ -175,18 +174,9 @@ class _ProfileState extends State<Profile> {
                                   .where('userId', isEqualTo: widget.userId)
                                   .snapshots(),
                           builder: (context, recipeSnapshot) {
-                            if (recipeSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              print('Loading recipes...');
-                            }
                             if (recipeSnapshot.hasError) {
                               print(
                                 'Error fetching recipes: ${recipeSnapshot.error}',
-                              );
-                            }
-                            if (recipeSnapshot.hasData) {
-                              print(
-                                'Found ${recipeSnapshot.data!.docs.length} recipes',
                               );
                             }
 
@@ -298,10 +288,7 @@ class _ProfileState extends State<Profile> {
                                       bRadius,
                                     ),
                                   ),
-                                  minimumSize: Size(
-                                    MediaQuery.of(context).size.width * 0.37,
-                                    MediaQuery.of(context).size.height * 0.07,
-                                  ),
+                                  minimumSize: Size(150, 50),
                                 ),
                                 child: Text(
                                   isFollowing ? 'Unfollow' : 'Follow',
@@ -317,27 +304,6 @@ class _ProfileState extends State<Profile> {
                         },
                       ),
                       SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            81,
-                            78,
-                            108,
-                          ),
-                          shadowColor: const Color.fromARGB(0, 174, 10, 10),
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(bRadius),
-                          ),
-                          minimumSize: Size(
-                            MediaQuery.of(context).size.width * 0.20,
-                            MediaQuery.of(context).size.height * 0.07,
-                          ),
-                        ),
-                        child: Icon(Icons.share, color: Colors.white, size: 26),
-                      ),
                     ],
                   ),
                 ),
@@ -465,15 +431,15 @@ class _ProfileState extends State<Profile> {
                       return SizedBox(
                         width: double.infinity,
                         child: GridView.builder(
-                          padding: EdgeInsets.symmetric(vertical: 8),
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          itemCount: recipes.length,
+                          shrinkWrap: true,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                mainAxisSpacing: 0,
-                                crossAxisSpacing: 15,
-                                childAspectRatio: 0.78,
+                                childAspectRatio: 0.65,
+                                crossAxisSpacing: 10,
                               ),
-                          itemCount: recipes.length,
                           itemBuilder: (context, index) {
                             return FoodItemsDisplay(
                               documentSnapshot: recipes[index],

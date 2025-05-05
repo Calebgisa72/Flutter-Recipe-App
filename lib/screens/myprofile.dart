@@ -75,10 +75,6 @@ class _MyProfileState extends State<MyProfile> {
         MaterialPageRoute(builder: (context) => Login()),
         (route) => false,
       );
-    } on FirebaseAuthException catch (e) {
-      setState(() {});
-    } catch (e) {
-      setState(() {});
     } finally {
       if (mounted) {
         setState(() {
@@ -129,23 +125,9 @@ class _MyProfileState extends State<MyProfile> {
                   alignment: Alignment.centerRight,
                   padding: EdgeInsets.all(3),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 40,
-                        height: double.infinity,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () => Navigator.pop(context),
-                          icon: Icon(Icons.chevron_left, size: 28),
-                        ),
-                      ),
                       Container(
                         width: 40,
                         decoration: BoxDecoration(
@@ -256,7 +238,7 @@ class _MyProfileState extends State<MyProfile> {
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 15),
                 SizedBox(
                   width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.height * 0.08,
@@ -287,8 +269,8 @@ class _MyProfileState extends State<MyProfile> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           minimumSize: Size(
-                            MediaQuery.of(context).size.width * 0.37,
-                            MediaQuery.of(context).size.height * 0.07,
+                            80,
+                            50,
                           ),
                         ),
                         child: Icon(
@@ -298,7 +280,7 @@ class _MyProfileState extends State<MyProfile> {
                         ),
                       ),
 
-                      SizedBox(width: 12),
+                      SizedBox(width: 30),
                       ElevatedButton(
                         onPressed: () {
                           handleLogout();
@@ -311,8 +293,8 @@ class _MyProfileState extends State<MyProfile> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           minimumSize: Size(
-                            MediaQuery.of(context).size.width * 0.37,
-                            MediaQuery.of(context).size.height * 0.07,
+                            80,
+                            50,
                           ),
                         ),
                         child:
@@ -435,7 +417,6 @@ class _MyProfileState extends State<MyProfile> {
                 SizedBox(
                   width: MediaQuery.of(context).size.width * 0.94,
                   height: MediaQuery.of(context).size.height * 0.36,
-
                   child: StreamBuilder<List<DocumentSnapshot>>(
                     stream: allRecipes,
                     builder: (
@@ -458,15 +439,15 @@ class _MyProfileState extends State<MyProfile> {
                       return SizedBox(
                         width: double.infinity,
                         child: GridView.builder(
-                          padding: EdgeInsets.symmetric(vertical: 8),
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          itemCount: recipes.length,
+                          shrinkWrap: true,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                mainAxisSpacing: 0,
-                                crossAxisSpacing: 15,
-                                childAspectRatio: 0.78,
+                                childAspectRatio: 0.65,
+                                crossAxisSpacing: 10,
                               ),
-                          itemCount: recipes.length,
                           itemBuilder: (context, index) {
                             return FoodItemsDisplay(
                               documentSnapshot: recipes[index],

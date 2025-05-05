@@ -383,17 +383,16 @@ Widget buildUserDetails(String userId) {
       final fullNames = data['fullNames'] ?? 'No name';
       final profilePhoto = data['profilePhoto'] ?? '';
 
-      return Row(
-        children: [
-          InkWell(
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => Profile(userId: userId),
-                  ),
-                ),
-            child: Container(
+      return InkWell(
+        onTap:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => Profile(userId: userId)),
+            ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
               width: 38,
               height: 38,
               clipBehavior: Clip.hardEdge,
@@ -414,16 +413,19 @@ Widget buildUserDetails(String userId) {
                       ? Image.network(profilePhoto, fit: BoxFit.cover)
                       : const Icon(Icons.person, size: 20),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              fullNames,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 17),
-              overflow: TextOverflow.ellipsis,
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                fullNames,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 17,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     },
   );

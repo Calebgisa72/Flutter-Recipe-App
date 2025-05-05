@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import '../screens/login.dart';
-import 'myprofile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class Signup extends StatefulWidget {

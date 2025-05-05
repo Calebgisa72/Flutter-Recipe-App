@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:flutter_recipe_app/screens/login.dart';

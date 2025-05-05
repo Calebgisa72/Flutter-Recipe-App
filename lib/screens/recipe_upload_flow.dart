@@ -481,7 +481,7 @@ class RecipeFormData {
     });
   }
 
-  Future<void> submit([String? docId]) async {
+  Future<String> submit([String? docId]) async {
     DatabaseService.instance.deleteDraft();
     final recipe = RecipeModel(
       name: name,

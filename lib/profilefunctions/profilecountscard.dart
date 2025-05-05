@@ -1,4 +1,3 @@
-// count_tile.dart
 import 'package:flutter/material.dart';
 
 class CountTile extends StatelessWidget {
@@ -11,7 +10,7 @@ class CountTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.17,
+      width: 100,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

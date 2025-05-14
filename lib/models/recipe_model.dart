@@ -38,8 +38,10 @@ class RecipeModel {
     'userId': userId,
   };
 
-  Future<void> createRecipe() async {
-    await FirebaseFirestore.instance.collection('Recipe-App').add(toJson());
+  Future<DocumentReference> createRecipe() async {
+    return await FirebaseFirestore.instance
+        .collection('Recipe-App')
+        .add(toJson());
   }
 
   Future<void> updateRecipe(String docId) async {

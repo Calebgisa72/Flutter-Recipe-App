@@ -227,7 +227,11 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          tabProvider.setSelectedTab(0);
+                          Navigator.pop(context);
+                          widget.edit
+                              ? tabProvider.setSelectedTab(3)
+                              : tabProvider.setSelectedTab(0);
+                          print('beats');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
@@ -270,28 +274,22 @@ class _RecipeFormFlowState extends State<RecipeFormFlow> {
                 if (widget.edit) {
                   await formData!.submit(widget.documentSnapshot!.id);
                 } else {
-                  await formData!.submit();
+                  final recipeId = await formData!.submit();
+
+                  final followers = await _getFollowers(formData!.userId);
+                  final batch = FirebaseFirestore.instance.batch();
+
+                  for (final followerId in followers) {
+                    await recordNewRecipeNotification(
+                      followerId: followerId,
+                      senderId: formData!.userId,
+                      recipeId: recipeId,
+                      context: context,
+                    );
+                  }
+
+                  await batch.commit();
                 }
-                final recipeId = await formData!.submit(
-                  widget.edit ? widget.documentSnapshot!.id : null,
-                );
-
-                final followers = await _getFollowers(formData!.userId);
-                final batch = FirebaseFirestore.instance.batch();
-
-                for (final followerId in followers) {
-                  await recordNewRecipeNotification(
-                    followerId: followerId,
-                    senderId: formData!.userId,
-                    recipeId: recipeId,
-                    context: context,
-                  );
-                }
-
-                await batch.commit();
-                print(
-                  '✅ Successfully recorded notifications for ${followers.length} followers',
-                );
 
                 showDialog(
                   context: context,
@@ -499,9 +497,7 @@ class RecipeFormData {
       await recipe.updateRecipe(docId);
       return docId;
     } else {
-      final docRef = await FirebaseFirestore.instance
-          .collection('recipes')
-          .add(recipe.toJson());
+      final docRef = await recipe.createRecipe();
       return docRef.id;
     }
   }

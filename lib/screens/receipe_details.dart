@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
+import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/screens/profile.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
@@ -20,6 +21,7 @@ class _DetailState extends State<Details> {
   @override
   Widget build(BuildContext context) {
     final favProvider = FavoriteProvider.of(context);
+    final appProvider = AppMainProvider.of(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
@@ -137,6 +139,7 @@ class _DetailState extends State<Details> {
                             Expanded(
                               child: buildUserDetails(
                                 widget.documentSnapshot['userId'],
+                                appProvider,
                               ),
                             ),
                             Expanded(
@@ -368,7 +371,7 @@ class _DetailState extends State<Details> {
   }
 }
 
-Widget buildUserDetails(String userId) {
+Widget buildUserDetails(String userId, AppMainProvider appSettings) {
   return StreamBuilder<DocumentSnapshot>(
     stream:
         FirebaseFirestore.instance
@@ -384,11 +387,17 @@ Widget buildUserDetails(String userId) {
       final profilePhoto = data['profilePhoto'] ?? '';
 
       return InkWell(
-        onTap:
-            () => Navigator.push(
+        onTap: () {
+          if (userId != appSettings.userId) {
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => Profile(userId: userId)),
-            ),
+            );
+          } else {
+            Navigator.pop(context);
+            appSettings.setSelectedTab(3);
+          }
+        },
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -7,6 +7,7 @@ import 'package:flutter_recipe_app/profilefunctions/profilecountscard.dart';
 import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 
 import 'package:flutter_recipe_app/screens/login.dart';
+import 'package:flutter_recipe_app/screens/recipe_upload_flow.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -32,7 +33,6 @@ class _MyProfileState extends State<MyProfile> {
   @override
   void initState() {
     super.initState();
-    print('Fetching profile for user: ${widget.userId}');
     _loadUserData();
   }
 
@@ -192,7 +192,6 @@ class _MyProfileState extends State<MyProfile> {
                           builder: (context, recipeSnapshot) {
                             if (recipeSnapshot.connectionState ==
                                 ConnectionState.waiting) {
-                              print('Loading recipes...');
                             }
                             if (recipeSnapshot.hasError) {
                               print(
@@ -268,10 +267,7 @@ class _MyProfileState extends State<MyProfile> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          minimumSize: Size(
-                            80,
-                            50,
-                          ),
+                          minimumSize: Size(80, 50),
                         ),
                         child: Icon(
                           Icons.settings,
@@ -292,10 +288,7 @@ class _MyProfileState extends State<MyProfile> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          minimumSize: Size(
-                            80,
-                            50,
-                          ),
+                          minimumSize: Size(80, 50),
                         ),
                         child:
                             isLoggingOut
@@ -447,10 +440,161 @@ class _MyProfileState extends State<MyProfile> {
                                 crossAxisCount: 2,
                                 childAspectRatio: 0.65,
                                 crossAxisSpacing: 10,
+                                mainAxisSpacing: 15
                               ),
                           itemBuilder: (context, index) {
-                            return FoodItemsDisplay(
-                              documentSnapshot: recipes[index],
+                            return Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                FoodItemsDisplay(
+                                  documentSnapshot: recipes[index],
+                                ),
+                                Container(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.04,
+                                  alignment: Alignment.centerRight,
+                                  child:
+                                      selectedVar2 == 'receipes'
+                                          ? Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 15,
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    InkWell(
+                                                      onTap: () async {
+                                                        bool
+                                                        confirmDelete = await showDialog(
+                                                          context: context,
+                                                          builder:
+                                                              (
+                                                                context,
+                                                              ) => AlertDialog(
+                                                                title: Text(
+                                                                  'Delete Recipe',
+                                                                ),
+                                                                content: Text(
+                                                                  'Are you sure you want to delete this recipe?',
+                                                                ),
+                                                                actions: [
+                                                                  TextButton(
+                                                                    onPressed:
+                                                                        () => Navigator.pop(
+                                                                          context,
+                                                                          false,
+                                                                        ),
+                                                                    child: Text(
+                                                                      'Cancel',
+                                                                    ),
+                                                                  ),
+                                                                  TextButton(
+                                                                    onPressed:
+                                                                        () => Navigator.pop(
+                                                                          context,
+                                                                          true,
+                                                                        ),
+                                                                    child: Text(
+                                                                      'Delete',
+                                                                      style: TextStyle(
+                                                                        color:
+                                                                            Colors.red,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                        );
+
+                                                        if (confirmDelete ==
+                                                            true) {
+                                                          try {
+                                                            await FirebaseFirestore
+                                                                .instance
+                                                                .collection(
+                                                                  'Recipe-App',
+                                                                )
+                                                                .doc(
+                                                                  recipes[index]
+                                                                      .id,
+                                                                )
+                                                                .delete();
+
+                                                            ScaffoldMessenger.of(
+                                                              context,
+                                                            ).showSnackBar(
+                                                              SnackBar(
+                                                                content: Text(
+                                                                  'Recipe deleted successfully',
+                                                                ),
+                                                                backgroundColor:
+                                                                    Colors
+                                                                        .green,
+                                                              ),
+                                                            );
+                                                          } catch (e) {
+                                                            ScaffoldMessenger.of(
+                                                              context,
+                                                            ).showSnackBar(
+                                                              SnackBar(
+                                                                content: Text(
+                                                                  'Failed to delete recipe: ${e.toString()}',
+                                                                ),
+                                                                backgroundColor:
+                                                                    Colors.red,
+                                                              ),
+                                                            );
+                                                          }
+                                                        }
+                                                      },
+                                                      splashColor: Colors.red
+                                                          .withOpacity(0.2),
+                                                      child: Icon(
+                                                        Icons.delete,
+                                                        color: Colors.red,
+                                                        size: 25,
+                                                      ),
+                                                    ),
+
+                                                    SizedBox(width: 15),
+
+                                                    InkWell(
+                                                      onTap: () {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder:
+                                                                (
+                                                                  context,
+                                                                ) => RecipeFormFlow(
+                                                                  edit: true,
+                                                                  documentSnapshot:
+                                                                      recipes[index],
+                                                                ),
+                                                          ),
+                                                        );
+                                                      },
+                                                      splashColor: Colors.red
+                                                          .withOpacity(0.2),
+                                                      child: Icon(
+                                                        Icons.edit,
+                                                        color: Colors.black,
+                                                        size: 25,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                          : Container(),
+                                ),
+                              ],
                             );
                           },
                         ),

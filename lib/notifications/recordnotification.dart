@@ -1,11 +1,8 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/notifications/serverkey.dart';
-import 'package:flutter_recipe_app/providers/notificationpush.dart';
-import 'package:provider/provider.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -26,8 +23,6 @@ Future<void> recordFollowNotification({
     final profilePhoto =
         senderDoc['profilePhoto'] ?? 'https://picsum.photos/300/200';
 
-    debugPrint('profilephoto url  $profilePhoto');
-
     final fcmTokens = await _getAllFcmTokens(targetUserId);
     if (fcmTokens.isEmpty) return;
 
@@ -46,16 +41,24 @@ Future<void> recordFollowNotification({
       'notificationId': notificationRef.id,
     });
 
-   
-
     for (final token in fcmTokens) {
       await _sendPushNotification(
         fcmToken: token,
-        imageurl: profilePhoto,
+
+        collapseKey: '',
         senderId: senderId,
-        title: fullName,
-        body: 'is now following you',
-        data: {'senderId': senderId, 'type': 'follow'},
+
+        data: {
+          'sender': senderId,
+          'type': 'follow',
+          'time': DateTime.now().toIso8601String(),
+          'productInfo': '',
+          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+          'title': fullName,
+          'body': 'is now following you',
+          'imageurl': profilePhoto,
+          'collapseKey': '',
+        },
       );
     }
   } catch (e, stackTrace) {
@@ -80,14 +83,16 @@ Future<List<String>> _getAllFcmTokens(String userId) async {
 
 Future<void> _sendPushNotification({
   required String fcmToken,
-  required String title,
-  required String imageurl,
+
   required String senderId,
-  required String body,
+  required String collapseKey,
+
   required Map<String, dynamic> data,
 }) async {
   const projectId = 'flutter-recipe-app-6b63e';
   final url = 'https://fcm.googleapis.com/v1/projects/$projectId/messages:send';
+
+  debugPrint('collapse_key $collapseKey');
 
   try {
     final response = await http.post(
@@ -99,20 +104,11 @@ Future<void> _sendPushNotification({
       body: jsonEncode({
         "message": {
           "token": fcmToken,
-          "data": {
-            "type": "follow",
-            "sender": senderId,
-            "time": DateTime.now().toIso8601String(),
-            "productInfo": "",
-          },
-          "notification": {"title": title, "body": body, "image": imageurl},
+
+          "data": data,
           "android": {
+           
             "priority": "high",
-            "notification": {
-              "image": imageurl,
-              "channel_id": "follow_notifications",
-              "notification_priority": "PRIORITY_MAX",
-            },
           },
         },
       }),
@@ -134,29 +130,96 @@ Future<void> recordLikedNotification({
   required String recipeId,
   required BuildContext context,
 }) async {
-  final docRef = await FirebaseFirestore.instance
-      .collection('Notifications')
-      .doc(targetUserId)
-      .collection('userNotifications')
-      .add({
-        'isRead': false,
-        'sender': senderId,
-        'time': FieldValue.serverTimestamp(),
-        'type': 'liked',
-        'recipeId': recipeId,
-      });
+  try {
+    final docRef = await FirebaseFirestore.instance
+        .collection('Notifications')
+        .doc(targetUserId)
+        .collection('userNotifications')
+        .add({
+          'isRead': false,
+          'sender': senderId,
+          'time': FieldValue.serverTimestamp(),
+          'type': 'liked',
+          'recipeId': recipeId,
+        });
 
-  if (context.mounted &&
-      targetUserId == FirebaseAuth.instance.currentUser?.uid) {
-    final notification = await docRef.get();
-    Provider.of<PushNotificationProvider>(
-      context,
-      listen: false,
-    ).showNotificationDialog(
-      context: context,
-      notificationData: notification.data()!,
+    final userIds = await fetchNotificationDocUserIds(recipeId);
+    // debugPrint('Fetched userIds: $userIds');
+
+    final users = await fetchUserNamesAndPhotos(userIds);
+
+    debugPrint('got users $users');
+
+    String body;
+    if (userIds.length == 1) {
+      body = '${users[0]['name']} liked your recipe';
+    } else if (userIds.length == 2) {
+      body = '${users[0]['name']}, ${users[1]['name']} liked your recipe';
+    } else {
+      body =
+          '${users[0]['name']}, ${users[1]['name']} and ${userIds.length - 2} others liked your recipe';
+    }
+
+    debugPrint(
+      'firstimageurl ${users.first['photo'] ?? ''}     and  secondimageurl ',
     );
+
+    final fcmTokens = await _getAllFcmTokens(targetUserId);
+    for (final token in fcmTokens) {
+      await _sendPushNotification(
+        fcmToken: token,
+        senderId: senderId,
+
+        collapseKey: recipeId,
+
+        data: {
+          'type': 'liked',
+          'time': DateTime.now().toIso8601String(),
+          'userIds': userIds.join(','),
+          'productInfo': recipeId,
+          'sender': senderId,
+          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+          'title': 'New Like',
+          'body': body,
+          'imageurl1': users.first['photo'] ?? '',
+          'imageurl2': userIds.length > 1 ? users[1]['photo'] ?? '' : '',
+          'collapseKey': recipeId.trim(),
+        },
+      );
+    }
+  } catch (e) {
+    debugPrint('recordLikedNotification error: $e');
   }
+}
+
+Future<List<String>> fetchNotificationDocUserIds(String recipeId) async {
+  final snapshot =
+      await FirebaseFirestore.instance
+          .collectionGroup('userNotifications')
+          .where('type', isEqualTo: 'liked')
+          .where('recipeId', isEqualTo: recipeId)
+          .get();
+
+  return snapshot.docs.map((doc) => doc['sender'] as String).toList();
+}
+
+Future<List<Map<String, String>>> fetchUserNamesAndPhotos(
+  List<String> userIds,
+) async {
+  final users = <Map<String, String>>[];
+
+  for (String id in userIds.take(2)) {
+    final userDoc =
+        await FirebaseFirestore.instance.collection('Users').doc(id).get();
+    if (userDoc.exists) {
+      users.add({
+        'name': userDoc['fullNames'] ?? '',
+        'photo': userDoc['profilePhoto'] ?? '',
+      });
+    }
+  }
+
+  return users;
 }
 
 Future<void> recordNewRecipeNotification({
@@ -165,29 +228,63 @@ Future<void> recordNewRecipeNotification({
   required String recipeId,
   required BuildContext context,
 }) async {
-  final docRef =
-      FirebaseFirestore.instance
-          .collection('Notifications')
-          .doc(followerId)
-          .collection('userNotifications')
-          .doc();
+  try {
+    final senderDoc =
+        await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(senderId)
+            .get();
+    final recipeDoc =
+        await FirebaseFirestore.instance
+            .collection('Recipe-App')
+            .doc(recipeId)
+            .get();
 
-  await docRef.set({
-    'isRead': false,
-    'sender': senderId,
-    'time': FieldValue.serverTimestamp(),
-    'type': 'new_recipe',
-    'recipeId': recipeId,
-  });
+    if (!senderDoc.exists || !recipeDoc.exists) return;
 
-  if (context.mounted && followerId == FirebaseAuth.instance.currentUser?.uid) {
-    final notification = await docRef.get();
-    Provider.of<PushNotificationProvider>(
-      context,
-      listen: false,
-    ).showNotificationDialog(
-      context: context,
-      notificationData: notification.data()!,
-    );
+    final fullName = senderDoc['fullNames'] ?? 'Someone';
+    final recipeName = recipeDoc['name'] ?? 'a new recipe';
+    final recipePhoto = recipeDoc['image'] ?? 'https://picsum.photos/300/200';
+    debugPrint('recipe photo $recipePhoto');
+
+    final fcmTokens = await _getAllFcmTokens(followerId);
+    final notificationRef =
+        FirebaseFirestore.instance
+            .collection('Notifications')
+            .doc(followerId)
+            .collection('userNotifications')
+            .doc();
+
+    await notificationRef.set({
+      'isRead': false,
+      'sender': senderId,
+      'time': FieldValue.serverTimestamp(),
+      'type': 'new_recipe',
+      'recipeId': recipeId,
+      'notificationId': notificationRef.id,
+    });
+
+    for (final token in fcmTokens) {
+      await _sendPushNotification(
+        fcmToken: token,
+
+        senderId: senderId,
+        collapseKey: '',
+
+        data: {
+          'sender': senderId,
+          'type': 'new_recipe',
+          'productInfo': recipeId,
+          'time': DateTime.now().toIso8601String(),
+          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+          'title': fullName,
+          'body': 'a new recipe $recipeName',
+          'imageurl': recipePhoto,
+          'collapseKey': '',
+        },
+      );
+    }
+  } catch (e, stackTrace) {
+    debugPrint('Recipe Notification Error: $e\n$stackTrace');
   }
 }

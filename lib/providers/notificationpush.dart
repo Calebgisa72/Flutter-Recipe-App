@@ -30,11 +30,6 @@ class PushNotificationProvider with ChangeNotifier {
     required BuildContext context,
     required Map<String, dynamic> notificationData,
   }) {
-    debugPrint('\n📢 NEW NOTIFICATION RECEIVED');
-    debugPrint('├─ Type: ${notificationData['type']}');
-    debugPrint('├─ Context valid: ${context != null}');
-    debugPrint('└─ Context mounted: ${context.mounted}');
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) {
         debugPrint('⚠️ Context disposed - cannot show dialog');

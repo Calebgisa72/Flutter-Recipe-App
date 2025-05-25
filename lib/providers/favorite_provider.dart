@@ -5,14 +5,12 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FavoriteProvider extends ChangeNotifier {
-  // Existing variables (unchanged)
   List<String> _favoriteIds = [];
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<String> get favoriteIds => _favoriteIds;
   late String userId;
   final Set<String> _loadingIds = {};
 
-  // New variables for specific user functionality
   List<String> _otherUserFavoriteIds = [];
   List<String> get otherUserFavoriteIds => _otherUserFavoriteIds;
 
@@ -104,7 +102,6 @@ class FavoriteProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // New method to load favorites for another user
   Future<void> loadOtherUserFavorites(String otherUserId) async {
     try {
       QuerySnapshot snapshot =

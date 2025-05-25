@@ -432,7 +432,7 @@ class _MyProfileState extends State<MyProfile> {
                       return SizedBox(
                         width: double.infinity,
                         child: GridView.builder(
-                          padding: EdgeInsets.symmetric(vertical: 20),
+                          padding: EdgeInsets.fromLTRB(0, 20, 0, 30),
                           itemCount: recipes.length,
                           shrinkWrap: true,
                           gridDelegate:

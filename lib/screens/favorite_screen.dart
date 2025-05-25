@@ -12,39 +12,48 @@ class FavoriteScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final favProvider = FavoriteProvider.of(context);
     final favoriteItems = favProvider.favoriteIds;
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         centerTitle: true,
-        title: Text('Favorites', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Favorites',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body:
           favoriteItems.isEmpty
-              ? Center(
+              ? const Center(
                 child: Text(
                   'No Favorites yet!',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               )
-              : ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 10),
-                itemCount: favoriteItems.length,
-                itemBuilder: (context, index) {
-                  String favoriteId = favoriteItems[index];
-                  return FutureBuilder<DocumentSnapshot>(
-                    future:
-                        FirebaseFirestore.instance
-                            .collection("Recipe-App")
-                            .doc(favoriteId)
-                            .get(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data == null) {
-                        return Center(child: Text('Error Loading Favorites'));
-                      }
-                      var favoriteItem = snapshot.data!;
+              : StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('Recipe-App')
+                        .where(
+                          FieldPath.documentId,
+                          whereIn: favoriteItems.isEmpty ? [''] : favoriteItems,
+                        )
+                        .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No favorites found'));
+                  }
+
+                  final favoriteRecipes = snapshot.data!.docs;
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    itemCount: favoriteRecipes.length,
+                    itemBuilder: (context, index) {
+                      final recipe = favoriteRecipes[index];
                       return Stack(
                         children: [
                           GestureDetector(
@@ -53,19 +62,18 @@ class FavoriteScreen extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(
                                   builder:
-                                      (context) => Details(
-                                        documentSnapshot: favoriteItem,
-                                      ),
+                                      (context) =>
+                                          Details(documentSnapshot: recipe),
                                 ),
                               );
                             },
                             child: Padding(
-                              padding: EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 vertical: 15,
                                 horizontal: 10,
                               ),
                               child: Container(
-                                padding: EdgeInsets.all(10),
+                                padding: const EdgeInsets.all(10),
                                 width: double.infinity,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(20),
@@ -80,58 +88,56 @@ class FavoriteScreen extends StatelessWidget {
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(20),
                                         image: DecorationImage(
-                                          image: NetworkImage(
-                                            favoriteItem['image'],
-                                          ),
+                                          image: NetworkImage(recipe['image']),
                                           fit: BoxFit.cover,
                                         ),
                                       ),
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          favoriteItem['name'],
-                                          style: TextStyle(
+                                          recipe['name'],
+                                          style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,
                                           ),
                                         ),
-                                        SizedBox(height: 5),
+                                        const SizedBox(height: 5),
                                         Row(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.center,
                                           children: [
-                                            Icon(
+                                            const Icon(
                                               Iconsax.flash1,
                                               size: 16,
                                               color: Colors.grey,
                                             ),
                                             Text(
-                                              "${favoriteItem['cal']} Cal",
-                                              style: TextStyle(
+                                              "${recipe['cal']} Cal",
+                                              style: const TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
-                                            Text(
+                                            const Text(
                                               " . ",
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w900,
                                                 color: Colors.grey,
                                               ),
                                             ),
-                                            Icon(
+                                            const Icon(
                                               Iconsax.clock,
                                               size: 16,
                                               color: Colors.grey,
                                             ),
-                                            SizedBox(width: 5),
+                                            const SizedBox(width: 5),
                                             Text(
-                                              '${favoriteItem['time']} Mins',
-                                              style: TextStyle(
+                                              '${recipe['time']} Mins',
+                                              style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,
                                                 color: Colors.grey,
@@ -151,12 +157,9 @@ class FavoriteScreen extends StatelessWidget {
                             right: 15,
                             child: GestureDetector(
                               onTap: () {
-                                favProvider.toggleFavorite(
-                                  favoriteItem,
-                                  context,
-                                );
+                                favProvider.toggleFavorite(recipe, context);
                               },
-                              child: CircleAvatar(
+                              child: const CircleAvatar(
                                 backgroundColor: Colors.white,
                                 child: Icon(Icons.delete, color: Colors.red),
                               ),

@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import './notifications/notification_service.dart';
 
+// ignore: unused_element
 AppLifecycleState? _appLifecycleState;
 
 @pragma('vm:entry-point')

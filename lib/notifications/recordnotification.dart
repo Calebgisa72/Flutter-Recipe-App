@@ -131,17 +131,6 @@ Future<void> recordLikedNotification({
   required BuildContext context,
 }) async {
   try {
-    final docRef = await FirebaseFirestore.instance
-        .collection('Notifications')
-        .doc(targetUserId)
-        .collection('userNotifications')
-        .add({
-          'isRead': false,
-          'sender': senderId,
-          'time': FieldValue.serverTimestamp(),
-          'type': 'liked',
-          'recipeId': recipeId,
-        });
 
     final userIds = await fetchNotificationDocUserIds(recipeId);
     // debugPrint('Fetched userIds: $userIds');

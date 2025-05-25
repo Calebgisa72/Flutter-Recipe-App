@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
+import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/screens/app_main_screen.dart';
 import 'package:flutter_recipe_app/screens/login.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
@@ -17,6 +18,7 @@ class Entrypage extends StatefulWidget {
 class _EntrypageState extends State<Entrypage> {
   bool isLoading = false;
   late AppMainProvider provider;
+  late FavoriteProvider favProvider;
 
   @override
   void initState() {
@@ -26,7 +28,9 @@ class _EntrypageState extends State<Entrypage> {
 
   Future<void> initAsync() async {
     provider = Provider.of<AppMainProvider>(context, listen: false);
+    favProvider = Provider.of<FavoriteProvider>(context, listen: false);
     await provider.loadUserId();
+    await favProvider.loadFavorite();
   }
 
   void checkLoginStatus() async {

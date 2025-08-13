@@ -130,7 +130,7 @@ class _MyProfileState extends State<MyProfile> {
                   alignment: Alignment.centerRight,
                   padding: EdgeInsets.all(3),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(

@@ -49,6 +49,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => FavoriteProvider()),
         ChangeNotifierProvider(create: (_) => AppMainProvider()),
+        
       ],
       child: const MyApp(),
     ),

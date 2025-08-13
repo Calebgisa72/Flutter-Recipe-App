@@ -11,9 +11,6 @@ class FavoriteProvider extends ChangeNotifier {
   late String userId;
   final Set<String> _loadingIds = {};
 
-  List<String> _otherUserFavoriteIds = [];
-  List<String> get otherUserFavoriteIds => _otherUserFavoriteIds;
-
   FavoriteProvider() {
     initializeFavorite();
   }
@@ -98,26 +95,6 @@ class FavoriteProvider extends ChangeNotifier {
               .toList();
     } catch (e) {
       print('Load Favorite Error: $e');
-    }
-    notifyListeners();
-  }
-
-  Future<void> loadOtherUserFavorites(String otherUserId) async {
-    try {
-      QuerySnapshot snapshot =
-          await _firestore.collection('UserFavorite').get();
-
-      _otherUserFavoriteIds =
-          snapshot.docs
-              .where((doc) {
-                List? favoriteBy = doc['favoriteBy'];
-                return favoriteBy != null && favoriteBy.contains(otherUserId);
-              })
-              .map((doc) => doc.id)
-              .toList();
-    } catch (e) {
-      print('Load Other User Favorite Error: $e');
-      _otherUserFavoriteIds = [];
     }
     notifyListeners();
   }

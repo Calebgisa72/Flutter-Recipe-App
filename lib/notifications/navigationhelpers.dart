@@ -11,6 +11,7 @@ Future<void> navigateToRecipe(BuildContext context, String recipeInfo) async {
           .get();
 
   if (snapshot.exists) {
+    debugPrint('data available ready to navigate');
     Navigator.push(
       context,
       MaterialPageRoute(

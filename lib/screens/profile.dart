@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
+import 'package:flutter_recipe_app/notifications/notificationcount.dart';
 import 'package:flutter_recipe_app/profilefunctions/profilecountscard.dart';
-import 'package:flutter_recipe_app/providers/favorite_provider.dart';
 import 'package:flutter_recipe_app/providers/notification_providers.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
-import 'package:iconsax/iconsax.dart';
+
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +16,17 @@ class Profile extends StatefulWidget {
 
   @override
   _ProfileState createState() => _ProfileState();
+}
+
+class FavoriteService {
+  static Future<List<String>> getUserFavorites(String userId) async {
+    final snapshot =
+        await FirebaseFirestore.instance
+            .collection('UserFavorite')
+            .where('favoriteBy', arrayContains: userId)
+            .get();
+    return snapshot.docs.map((doc) => doc.id).toList();
+  }
 }
 
 class _ProfileState extends State<Profile> {
@@ -37,21 +48,24 @@ class _ProfileState extends State<Profile> {
   String selectedVar2 = 'receipes';
 
   Stream<List<DocumentSnapshot>> get allRecipes {
-    final favProvider = FavoriteProvider.of(context);
-    final favoriteItems = favProvider.favoriteIds;
-    if (selectedVar2 == 'receipes') {
-      return FirebaseFirestore.instance
-          .collection('Recipe-App')
-          .where('userId', isEqualTo: widget.userId)
-          .snapshots()
-          .map((snap) => snap.docs);
-    } else {
-      return FirebaseFirestore.instance
-          .collection('Recipe-App')
-          .where(FieldPath.documentId, whereIn: favoriteItems)
-          .snapshots()
-          .map((snap) => snap.docs);
-    }
+    return selectedVar2 == 'receipes'
+        ? FirebaseFirestore.instance
+            .collection('Recipe-App')
+            .where('userId', isEqualTo: widget.userId)
+            .snapshots()
+            .map((snap) => snap.docs)
+        : Stream.fromFuture(
+          FavoriteService.getUserFavorites(widget.userId),
+        ).asyncExpand(
+          (ids) => FirebaseFirestore.instance
+              .collection('Recipe-App')
+              .where(
+                FieldPath.documentId,
+                whereIn: ids.isNotEmpty ? ids : ['dummy'],
+              )
+              .snapshots()
+              .map((snap) => snap.docs),
+        );
   }
 
   Future<void> _loadUserData() async {
@@ -119,12 +133,7 @@ class _ProfileState extends State<Profile> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         height: double.infinity,
-                        child: Center(
-                          child: IconButton(
-                            onPressed: () => {},
-                            icon: Icon(Iconsax.notification, size: 25),
-                          ),
-                        ),
+                        child: Center(child: NotificationIconWithBadge()),
                       ),
                     ],
                   ),
@@ -443,6 +452,7 @@ class _ProfileState extends State<Profile> {
                           itemBuilder: (context, index) {
                             return FoodItemsDisplay(
                               documentSnapshot: recipes[index],
+                              isOnAnotherUserPage: true,
                             );
                           },
                         ),

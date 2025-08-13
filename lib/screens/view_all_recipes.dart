@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/components/food_items_display.dart';
 import 'package:flutter_recipe_app/components/my_icon_button.dart';
+import 'package:flutter_recipe_app/notifications/notificationcount.dart';
 import 'package:flutter_recipe_app/providers/app_main_provider.dart';
 import 'package:flutter_recipe_app/utils/constants.dart';
 import 'package:iconsax/iconsax.dart';
@@ -41,7 +42,7 @@ class _ViewAllRecipesState extends State<ViewAllRecipes> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Spacer(),
-          MyIconButton(icon: Iconsax.notification, pressed: () {}),
+          NotificationIconWithBadge(),
           SizedBox(width: 15),
         ],
       ),

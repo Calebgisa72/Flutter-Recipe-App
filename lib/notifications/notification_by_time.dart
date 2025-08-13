@@ -71,6 +71,7 @@ class _FollowNotificationCardState extends State<FollowNotificationCard> {
 
                 if (type == 'follow') {
                   return UserFollowRecipeCard(
+                    ismodal: false,
                     notType: 'follow',
                     userInfo: notification['sender'],
                     time: timestamp,
@@ -78,6 +79,7 @@ class _FollowNotificationCardState extends State<FollowNotificationCard> {
                   );
                 } else if (type == 'new_recipe') {
                   return UserFollowRecipeCard(
+                    ismodal: false,
                     notType: 'new_recipe',
                     userInfo: notification['sender'],
                     time: timestamp,
@@ -88,11 +90,13 @@ class _FollowNotificationCardState extends State<FollowNotificationCard> {
                   if (group.first['time'] == timestamp) {
                     return group.length > 1
                         ? MultiUserNotification(
+                          ismodal: false,
                           usersIds: group.map((n) => n['sender']).toList(),
                           recipeId: notification['recipeId'],
                           time: timestamp,
                         )
                         : UserFollowRecipeCard(
+                          ismodal: false,
                           notType: 'liked',
                           userInfo: notification['sender'],
                           time: timestamp,

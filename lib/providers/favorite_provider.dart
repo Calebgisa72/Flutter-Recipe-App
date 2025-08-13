@@ -8,9 +8,7 @@ class FavoriteProvider extends ChangeNotifier {
   List<String> _favoriteIds = [];
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<String> get favoriteIds => _favoriteIds;
-
   late String userId;
-
   final Set<String> _loadingIds = {};
 
   FavoriteProvider() {
@@ -34,13 +32,12 @@ class FavoriteProvider extends ChangeNotifier {
     if (_favoriteIds.contains(productId)) {
       _favoriteIds.remove(productId);
       await removeFavorite(productId);
+      _loadingIds.remove(productId);
+      notifyListeners();
     } else {
       _favoriteIds.add(productId);
       await addFavorite(productId, product, context);
     }
-
-    _loadingIds.remove(productId);
-    notifyListeners();
   }
 
   bool alreadyFav(DocumentSnapshot product) {
@@ -56,6 +53,8 @@ class FavoriteProvider extends ChangeNotifier {
       await _firestore.collection('UserFavorite').doc(productId).set({
         'favoriteBy': FieldValue.arrayUnion([userId]),
       }, SetOptions(merge: true));
+      _loadingIds.remove(productId);
+      notifyListeners();
 
       await recordLikedNotification(
         targetUserId: product['userId'],
